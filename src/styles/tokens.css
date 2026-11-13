@@ -1,0 +1,37 @@
+/* AeroFocus design tokens (PRD "Design system"). The accent is one variable so
+   alternate themes (#8CB8E8, #E8836A) are a single override. */
+:root {
+  --bg: #0a0e14;
+  --surface: #141a22;
+  --surface-sunk: #0e1218;
+  --flap: rgba(8, 11, 15, 0.82);
+  --border: #262e39;
+  --text: #ece7de;
+  --text-muted: #c3cad3;
+  --accent: #f2b33d;
+  --on-accent: #1a1407;
+  --sky: #8cb8e8;
+  --divert: #f4b3a6;
+  --divert-bg: rgba(240, 164, 150, 0.12);
+  --paper: #f4efe6;
+  --paper-stub: #ece5d8;
+  --ink: #1b1f24;
+  --ink-label: #4f5763;
+
+  --glow-amber: rgba(242, 179, 61, 0.3);
+  --glow-blue: rgba(78, 128, 214, 0.42);
+  --glow-clay: rgba(196, 104, 92, 0.3);
+
+  --shadow-card: 0 24px 48px rgba(0, 0, 0, 0.3);
+  --shadow-pass: 0 40px 80px rgba(0, 0, 0, 0.45);
+
+  --glass-bg: rgba(20, 26, 36, 0.42);
+  --glass-bg-fallback: rgba(20, 26, 36, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
+  /* Glow positions; each screen overrides these. */
+  --glow-1: 12% 8%;
+  --glow-2: 88% 18%;
+  --glow-3: 60% 96%;
+}
