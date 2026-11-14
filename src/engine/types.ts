@@ -66,7 +66,7 @@ export interface Stamp {
   lastAt: number;
 }
 
-export type AudioChannel = 'cabin' | 'rain' | 'lofi' | 'chime';
+export type AudioChannel = 'cabin' | 'rain' | 'lofi' | 'chime' | 'voice';
 
 export interface Profile {
   homeAirport?: Iata;

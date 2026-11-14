@@ -38,7 +38,7 @@ Signing in moves the guest's flights into the account. Account data is saved on 
 - `src/store/` — Zustand stores: `bookingStore` (the draft), `sessionStore` (the live flight), `profileStore` (totals, stamps, log).
 - `src/storage/` — one adapter interface; IndexedDB for guests, Supabase for accounts, `merge.ts` to join them.
 - `src/screens/` — Terminal, Booking, Seat, BoardingPass, InFlight, Landing, Passport, FlightLog.
-- `src/audio/mixer.ts` — all four sounds are synthesized with the Web Audio API. There are no audio files.
+- `src/audio/mixer.ts` — loops and cabin cues are synthesized with the Web Audio API. `src/audio/voice.ts` speaks the crew announcements with the browser's built-in speech. There are no audio files.
 
 ## Where this differs from the PRD
 
@@ -60,6 +60,8 @@ Signing in moves the guest's flights into the account. Account data is saved on 
 | Streak | Landed flights only | Approved open question. |
 
 ## Known limits
+
+- **Crew announcements** use the browser's built-in speech, so the voice differs by device and can sound robotic. They have their own switch in the audio mixer, are off for middle seats, and are skipped where the browser has no speech support.
 
 - **Focus credit is an honor system.** The timer credits flight time whether or not you were working. In an exit-row seat (auto-resume) a closed laptop still earns the full flight.
 - **Notifications are best-effort.** Browsers throttle hidden tabs and can't schedule a notification for later, so a break alert can be late and won't fire on a sleeping device. The timer itself is always right when you come back.

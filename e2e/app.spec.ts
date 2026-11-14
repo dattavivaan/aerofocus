@@ -269,3 +269,39 @@ test('sign-in offers email and Google only', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Apple/ })).toHaveCount(0);
 });
+
+test('the crew announces each stage of the flight, and the switch silences it', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __said: string[] };
+    w.__said = [];
+    SpeechSynthesis.prototype.speak = function (u: SpeechSynthesisUtterance) {
+      w.__said.push(u.text);
+    };
+  });
+  const said = () => page.evaluate(() => (window as unknown as { __said: string[] }).__said);
+  await start(page);
+  await bookAndBoard(page, 'PDX', '14A', 'Beverage Service · 5 min');
+  await page.clock.runFor(4000);
+  expect((await said()).at(-1)).toMatch(/^Welcome aboard AeroFocus flight A X \d{3} to Portland\. Our flight time is 45 minutes/);
+  await skip(page, '10:00');
+  await skip(page, '05:00');
+  await page.clock.runFor(2000);
+  expect((await said()).at(-1)).toContain('cruising altitude');
+  await skip(page, '05:00');
+  await page.clock.runFor(2000);
+  expect((await said()).at(-1)).toBe('Meal service is now beginning. Please take a break for the next 5 minutes.');
+  await skip(page, '05:00');
+  await page.clock.runFor(3500);
+  expect((await said()).at(-1)).toContain('Please fasten your seatbelt');
+  // Turn announcements off: descent and landing stay silent.
+  if (page.viewportSize()!.width < 768) await page.getByRole('button', { name: 'Cabin audio' }).click();
+  await page.getByRole('switch', { name: 'Crew announcements' }).click();
+  if (page.viewportSize()!.width < 768) await page.getByRole('button', { name: 'Close' }).click();
+  const before = (await said()).length;
+  await page.getByRole('button', { name: 'Fasten seatbelt' }).click();
+  await skip(page, '05:00');
+  await skip(page, '15:30');
+  await page.waitForURL('**/landing');
+  await page.clock.runFor(7000);
+  expect((await said()).length).toBe(before);
+});

@@ -1,4 +1,4 @@
-import { applyOutcome, defaultProfile } from '../engine/stats';
+import { applyOutcome, defaultProfile, withDefaults } from '../engine/stats';
 import type { Booking, Profile, Session } from '../engine/types';
 import type { AppData, StorageAdapter } from './adapter';
 
@@ -18,7 +18,7 @@ export function mergeData(primary: AppData, secondary: AppData): AppData {
     const old = sessions.get(s.id);
     if (!old || rank(s) >= rank(old)) sessions.set(s.id, s);
   }
-  const settings: Profile = { ...defaultProfile(), ...(secondary.profile ?? {}), ...(primary.profile ?? {}) };
+  const settings: Profile = withDefaults({ ...(secondary.profile ?? {}), ...(primary.profile ?? {}) });
   return rebuild(settings, [...bookings.values()], [...sessions.values()]);
 }
 

@@ -3,6 +3,7 @@ import { SlidersHorizontal, X } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../app/routes';
 import { mixer } from '../audio/mixer';
+import { announce, SCRIPT, silence } from '../audio/voice';
 import { AudioMixer } from '../components/audio/AudioMixer';
 import { CabinWindow } from '../components/CabinWindow';
 import { DivertDialog } from '../components/DivertDialog';
@@ -76,22 +77,42 @@ export function InFlight() {
   const flying = isFlying(session);
   const rules = booking ? SEAT_RULES[booking.seatType] : null;
 
+  // Crew announcements follow their own switch; middle seats get chimes only.
+  const voice = profile.audio.voice;
+  const voiceOn = voice.on && !!rules?.ambientAudio;
+  const say = useCallback(
+    (text: string, delayMs: number) => {
+      if (voiceOn) announce(text, voice.vol, delayMs);
+    },
+    [voiceOn, voice.vol],
+  );
+  useEffect(() => {
+    if (!voiceOn) silence();
+  }, [voiceOn]);
+
   // The timer: recalculated every second and whenever the tab wakes.
   useEffect(() => {
     if (!flying) return;
     // After a sleep several events can be due at once; only voice the last.
     const last = tick(clockNow()).filter((t) => t === 'meal-start' || t === 'meal-end' || t === 'landed').pop();
+    const b = useSession.getState().booking;
+    const s = useSession.getState().session;
+    if (!b || !s) return;
     if (last === 'meal-start') {
       mixer.cue('meal-start');
+      const meal = [...b.meals].sort((x, y) => x.startMin - y.startMin)[s.events.filter((e) => e.type === 'meal-end').length];
+      if (meal) say(SCRIPT.mealStart(meal.lengthMin), 1400);
       notifyIfHidden('Meal service', 'Your break has started. Step away from the work.');
     } else if (last === 'meal-end') {
       mixer.cue('meal-end', { sign: !rules?.autoResume });
+      say(SCRIPT.mealEnd(!!rules?.autoResume), rules?.autoResume ? 1400 : 2800);
       notifyIfHidden('Meal service is over', rules?.autoResume ? 'Back to work. The flight continues.' : 'Fasten your seatbelt to resume the flight.');
     } else if (last === 'landed') {
       mixer.cue('landing');
+      say(SCRIPT.landing(airport(b.destination)?.city ?? b.destination, s.focusedMin), 5200);
       notifyIfHidden('Landed', 'Welcome to your destination. Your stamp is waiting.');
     }
-  }, [nowTs, flying, tick, rules?.autoResume]);
+  }, [nowTs, flying, tick, rules?.autoResume, say]);
 
   // Audio: started here (and on Board), unlocked by any click. On exit the
   // loops fade and the context stays open briefly so the landing cue can finish.
@@ -120,9 +141,18 @@ export function InFlight() {
     mixer.setPhase(phaseNow);
     if (prev === null) {
       // Just boarded (not a reload mid-flight): doors close, sign on.
-      if (clockNow() - (session.departedAt ?? 0) < 5000) mixer.cue('boarding');
-    } else if (prev === 'climbing' && phaseNow === 'cruising') mixer.cue('seatbelt-off');
-    else if (prev !== 'descending' && phaseNow === 'descending') mixer.cue('seatbelt-on');
+      if (booking && clockNow() - (session.departedAt ?? 0) < 5000) {
+        mixer.cue('boarding');
+        say(SCRIPT.boarding(booking.flightNo, airport(booking.destination)?.city ?? booking.destination, booking.blockMin), 2600);
+      }
+    } else if (prev === 'climbing' && phaseNow === 'cruising') {
+      mixer.cue('seatbelt-off');
+      say(SCRIPT.cruise(), 1400);
+    } else if (prev !== 'descending' && phaseNow === 'descending' && booking) {
+      mixer.cue('seatbelt-on');
+      const left = (booking.blockMin * 60_000 - flightView(booking, session, clockNow()).elapsedMs) / 60_000;
+      say(SCRIPT.descent(airport(booking.destination)?.city ?? booking.destination, Math.round(left)), 1400);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phaseNow]);
 
@@ -310,6 +340,7 @@ export function InFlight() {
       onConfirm={() => {
         setDivertOpen(false);
         mixer.cue('divert');
+        say(SCRIPT.divert(focusedMin), 1200);
         divert(clockNow());
         nav(ROUTES.landing);
       }}

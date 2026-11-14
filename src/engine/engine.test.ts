@@ -476,3 +476,26 @@ describe('account sync', () => {
     expect((await cloud.loadAll()).profile!.totals.flights).toBe(1);
   });
 });
+
+describe('voice', () => {
+  it('speaks durations and announcements in plain words', async () => {
+    const { spokenDuration, SCRIPT } = await import('../audio/voice');
+    expect(spokenDuration(45)).toBe('45 minutes');
+    expect(spokenDuration(60)).toBe('1 hour');
+    expect(spokenDuration(110)).toBe('1 hour 50 minutes');
+    expect(spokenDuration(601)).toBe('10 hours 1 minute');
+    expect(spokenDuration(0)).toBe('0 minutes');
+    expect(SCRIPT.boarding('AX500', 'San Francisco', 110)).toContain('flight A X 500 to San Francisco. Our flight time is 1 hour 50 minutes');
+    expect(SCRIPT.mealEnd(false)).toContain('fasten your seatbelt');
+    expect(SCRIPT.mealEnd(true)).not.toContain('seatbelt');
+  });
+  it('older saved profiles gain the voice setting without losing the rest', async () => {
+    const { withDefaults } = await import('./stats');
+    const old = { units: 'km', audio: { cabin: { on: false, vol: 0.2 }, rain: { on: true, vol: 0.4 }, lofi: { on: false, vol: 0.4 }, chime: { on: true, vol: 0.7 } } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const p = withDefaults(old as any);
+    expect(p.units).toBe('km');
+    expect(p.audio.cabin).toEqual({ on: false, vol: 0.2 });
+    expect(p.audio.voice).toEqual({ on: true, vol: 0.8 });
+  });
+});

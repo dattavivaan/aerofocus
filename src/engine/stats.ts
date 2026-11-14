@@ -1,6 +1,12 @@
 import { isFirstClassUnlocked } from './seats';
 import type { Booking, Profile, Session, Stamp } from './types';
 
+/** A saved profile with any settings added since it was saved filled in. */
+export function withDefaults(saved: Partial<Profile> | null | undefined): Profile {
+  const d = defaultProfile();
+  return { ...d, ...(saved ?? {}), audio: { ...d.audio, ...(saved?.audio ?? {}) } };
+}
+
 export function defaultProfile(): Profile {
   return {
     units: 'mi',
@@ -13,6 +19,7 @@ export function defaultProfile(): Profile {
       rain: { on: false, vol: 0.4 },
       lofi: { on: false, vol: 0.4 },
       chime: { on: true, vol: 0.7 },
+      voice: { on: true, vol: 0.8 },
     },
   };
 }

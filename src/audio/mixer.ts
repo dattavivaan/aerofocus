@@ -10,7 +10,7 @@
 import type { AudioChannel } from '../engine/types';
 
 type Settings = Record<AudioChannel, { on: boolean; vol: number }>;
-type Loop = Exclude<AudioChannel, 'chime'>;
+type Loop = Exclude<AudioChannel, 'chime' | 'voice'>;
 
 const SR = 44100;
 

@@ -1,4 +1,5 @@
-import { CloudRain, Bell, Music, Wind } from 'lucide-react';
+import { CloudRain, Bell, Megaphone, Music, Wind } from 'lucide-react';
+import { voiceSupported } from '../../audio/voice';
 import type { AudioChannel, Profile } from '../../engine/types';
 
 const CHANNELS: { id: AudioChannel; label: string; Icon: typeof Wind }[] = [
@@ -6,6 +7,7 @@ const CHANNELS: { id: AudioChannel; label: string; Icon: typeof Wind }[] = [
   { id: 'rain', label: 'Rain on window', Icon: CloudRain },
   { id: 'lofi', label: 'Soft lo-fi', Icon: Music },
   { id: 'chime', label: 'Cabin chime alerts', Icon: Bell },
+  { id: 'voice', label: 'Crew announcements', Icon: Megaphone },
 ];
 
 interface Props {
@@ -19,7 +21,7 @@ export function AudioMixer({ audio, ambient, onChange }: Props) {
   return (
     <div className="flex flex-col gap-1">
       {CHANNELS.map(({ id, label, Icon }) => {
-        const locked = !ambient && id !== 'chime';
+        const locked = (!ambient && id !== 'chime') || (id === 'voice' && !voiceSupported());
         const ch = audio[id];
         const on = ch.on && !locked;
         return (
@@ -55,7 +57,9 @@ export function AudioMixer({ audio, ambient, onChange }: Props) {
       })}
       <p className="text-muted mt-1 text-[12px]">
         {ambient
-          ? 'Chime alerts cover the seatbelt sign, meal service, doors and touchdown.'
+          ? voiceSupported()
+            ? 'Chimes cover the seatbelt sign, meal service, doors and touchdown. Announcements use your device’s built-in voice.'
+            : 'Chimes cover the seatbelt sign, meal service, doors and touchdown. This browser has no built-in voice for announcements.'
           : 'Middle seat: ambient audio is off. Chimes only.'}
       </p>
     </div>

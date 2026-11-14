@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { applyOutcome, defaultProfile } from '../engine/stats';
+import { applyOutcome, defaultProfile, withDefaults } from '../engine/stats';
 import type { Booking, Profile, Session, Stamp } from '../engine/types';
 import type { StorageAdapter } from '../storage/adapter';
 import { createLocalAdapter } from '../storage/localAdapter';
@@ -41,7 +41,7 @@ export const useProfile = create<ProfileState>((set, get) => ({
     set({
       adapter: a,
       hydrated: true,
-      profile: { ...defaultProfile(), ...(data.profile ?? {}) },
+      profile: withDefaults(data.profile),
       stamps: data.stamps,
       bookings: data.bookings,
       sessions: data.sessions,
