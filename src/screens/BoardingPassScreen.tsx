@@ -7,6 +7,9 @@ import { BoardingPass } from '../components/pass/BoardingPass';
 import { Button } from '../components/ui/Button';
 import { MobileStepHeader, Screen, StepPills, TopBar } from '../components/ui/TopBar';
 import { airport } from '../data/airports';
+import { mixer } from '../audio/mixer';
+import { now as clockNow } from '../lib/clock';
+import { askNotifications } from '../lib/device';
 import { useIsMobile, useNow, useReducedMotion } from '../lib/hooks';
 import { useBooking } from '../store/bookingStore';
 import { useProfile } from '../store/profileStore';
@@ -33,7 +36,7 @@ export function BoardingPassScreen() {
     booking.destination !== draft.destination ||
     booking.seat !== draft.seat;
   useEffect(() => {
-    if (hasRoute && stale && !isFlying(session)) openPass(Date.now());
+    if (hasRoute && stale && !isFlying(session)) openPass(clockNow());
   }, [hasRoute, stale, session, openPass]);
 
   if (isFlying(session)) return <Navigate to={ROUTES.flight} replace />;
@@ -44,7 +47,10 @@ export function BoardingPassScreen() {
   const departAt = Math.max(passOpenedAt + DEPART_IN_MS, now);
 
   const start = () => {
-    board(Date.now());
+    // Both need a click: audio may only start, and permission only be asked, from one.
+    mixer.start();
+    askNotifications();
+    board(clockNow());
     nav(ROUTES.flight);
   };
   const changeSeat = () => {

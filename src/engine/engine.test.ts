@@ -382,3 +382,14 @@ describe('storage adapter', () => {
     expect((await a.loadAll()).profile).toBeNull();
   });
 });
+
+describe('sky', () => {
+  it('goes from day to golden hour to night', async () => {
+    const { skyAt } = await import('./sky');
+    expect(skyAt(0)).toMatchObject({ label: 'Day', stars: 0 });
+    expect(skyAt(0.7).label).toBe('Golden hour');
+    expect(skyAt(0.88).label).toBe('Dusk');
+    expect(skyAt(1)).toMatchObject({ label: 'Night', stars: 1 });
+    expect(skyAt(5).top).toBe(skyAt(1).top);
+  });
+});

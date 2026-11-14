@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ROUTES } from './routes';
 import { initAuth } from '../auth/auth';
 import { Booking } from '../screens/Booking';
+import { InFlight } from '../screens/InFlight';
 import { BoardingPassScreen } from '../screens/BoardingPassScreen';
 import { Placeholder } from '../screens/Placeholder';
 import { Seat } from '../screens/Seat';
@@ -30,7 +31,7 @@ export function App() {
         <Route path={ROUTES.booking} element={<Booking />} />
         <Route path={ROUTES.seat} element={<Seat />} />
         <Route path={ROUTES.pass} element={<BoardingPassScreen />} />
-        <Route path={ROUTES.flight} element={<Placeholder route="flight" step="Screen 5" title="In flight" glows={['94% 60%', '30% 0%', '4% 96%']} />} />
+        <Route path={ROUTES.flight} element={<InFlight />} />
         <Route path={ROUTES.landing} element={<Placeholder route="landing" step="Screen 6" title="Landing" glows={['30% 10%', '80% 40%', '14% 92%']} />} />
         <Route path={ROUTES.passport} element={<Placeholder route="passport" step="Screen 6 · Tab" title="Passport" glows={['70% 8%', '10% 50%', '86% 94%']} />} />
         <Route path={ROUTES.log} element={<Placeholder route="log" step="Screen 6 · Tab" title="Flight log" glows={['6% 20%', '92% 30%', '44% 100%']} />} />

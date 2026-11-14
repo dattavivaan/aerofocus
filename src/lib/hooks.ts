@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { now as clockNow } from './clock';
 
 export function useMediaQuery(query: string): boolean {
   const [match, setMatch] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(query).matches);
@@ -17,9 +18,9 @@ export const useReducedMotion = () => useMediaQuery('(prefers-reduced-motion: re
 
 /** Current time, refreshed on an interval and when the tab wakes. */
 export function useNow(intervalMs = 1000): number {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => clockNow());
   useEffect(() => {
-    const tick = () => setNow(Date.now());
+    const tick = () => setNow(clockNow());
     const id = setInterval(tick, intervalMs);
     document.addEventListener('visibilitychange', tick);
     window.addEventListener('focus', tick);
