@@ -3,22 +3,22 @@ import { Link, NavLink } from 'react-router-dom';
 import { ROUTES } from '../../app/routes';
 import { PlaneIcon } from './PlaneIcon';
 
-export function Wordmark() {
+export function Wordmark({ iconOnlyOnMobile }: { iconOnlyOnMobile?: boolean }) {
   return (
     <Link to={ROUTES.terminal} className="flex min-h-11 shrink-0 items-center gap-2" aria-label="AeroFocus home">
       <PlaneIcon size={18} rotate={45} className="text-accent" />
-      <span className="font-display text-[17px] font-bold tracking-[0.14em] md:text-[20px]">AEROFOCUS</span>
+      <span className={`font-display text-[17px] font-bold tracking-[0.14em] md:text-[20px] ${iconOnlyOnMobile ? 'hidden md:inline' : ''}`}>AEROFOCUS</span>
     </Link>
   );
 }
 
 /** Glass pill top bar. Floats over the page glows. */
-export function TopBar({ children, className = '' }: { children?: ReactNode; className?: string }) {
+export function TopBar({ children, className = '', compact }: { children?: ReactNode; className?: string; compact?: boolean }) {
   return (
     <header
       className={`glass sticky top-3 z-30 mx-auto flex w-full max-w-[1344px] items-center justify-between gap-3 rounded-full py-1.5 pr-2 pl-4 md:pl-6 ${className}`}
     >
-      <Wordmark />
+      <Wordmark iconOnlyOnMobile={compact} />
       {children}
     </header>
   );
@@ -96,7 +96,7 @@ export function MobileStepHeader({ back, step, title }: { back: string; step: nu
 export function Screen({ glows, children, className = '' }: { glows: [string, string, string]; children: ReactNode; className?: string }) {
   return (
     <div
-      className={`screen-bg min-h-dvh px-4 pt-3 pb-10 md:px-8 ${className}`}
+      className={`screen-bg min-h-dvh overflow-x-clip px-4 pt-3 pb-10 md:px-8 ${className}`}
       style={{ '--glow-1': glows[0], '--glow-2': glows[1], '--glow-3': glows[2] } as React.CSSProperties}
     >
       {children}
