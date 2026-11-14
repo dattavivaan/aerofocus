@@ -20,7 +20,11 @@ Open the address it prints. In dev mode the in-flight header has a **+5m** butto
 | `npm run e2e` | Browser flow tests (Playwright). First run: `npx playwright install chromium` |
 | `npm run build:airports` | Rebuild `src/data/airports.json` from OurAirports |
 
-When hosting, send every path to `index.html` (single-page app fallback).
+When hosting elsewhere, send every path to `index.html` (single-page app fallback).
+
+## Publishing
+
+`.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to `main`. One-time setup: the repository must be public (or on a paid plan), and Settings → Pages → Source must be set to "GitHub Actions". The site is served at `https://<user>.github.io/<repository>/`; the workflow sets `BASE_PATH` to match, so renaming the repository needs no code change.
 
 ## Accounts (optional)
 

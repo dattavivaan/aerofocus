@@ -111,7 +111,7 @@ export async function signInOAuth(): Promise<AuthResult> {
   if (!useAuth.getState().configured) return NOT_SET_UP;
   try {
     const db = await supabase();
-    const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+    const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + import.meta.env.BASE_URL } });
     return error ? { ok: false, error: error.message } : { ok: true, note: 'Opening the sign-in page…' };
   } catch {
     return { ok: false, error: 'Could not reach the sign-in service. You can still fly with a Guest Pass.' };

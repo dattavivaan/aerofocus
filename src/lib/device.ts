@@ -31,7 +31,7 @@ export function askNotifications(): void {
 export function notifyIfHidden(title: string, body: string): void {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted' || !document.hidden) return;
   try {
-    new Notification(title, { body, tag: 'aerofocus', icon: '/favicon.svg' });
+    new Notification(title, { body, tag: 'aerofocus', icon: `${import.meta.env.BASE_URL}favicon.svg` });
   } catch {
     /* some browsers only allow notifications from a service worker */
   }

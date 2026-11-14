@@ -27,7 +27,7 @@ export function App() {
   if (!hydrated) return <div className="screen-bg min-h-dvh" aria-busy="true" />;
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <Routes>
         <Route path={ROUTES.terminal} element={<Terminal />} />
         <Route path={ROUTES.booking} element={<Booking />} />
