@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../app/routes';
@@ -79,21 +79,22 @@ export function InFlight() {
   // The timer: recalculated every second and whenever the tab wakes.
   useEffect(() => {
     if (!flying) return;
-    for (const type of tick(clockNow())) {
-      if (type === 'meal-start') {
-        mixer.chime();
-        notifyIfHidden('Meal service', 'Your break has started. Step away from the work.');
-      } else if (type === 'meal-end') {
-        mixer.chime();
-        notifyIfHidden('Meal service is over', rules?.autoResume ? 'Back to work. The flight continues.' : 'Fasten your seatbelt to resume the flight.');
-      } else if (type === 'landed') {
-        mixer.chime();
-        notifyIfHidden('Landed', 'Welcome to your destination. Your stamp is waiting.');
-      }
+    // After a sleep several events can be due at once; only voice the last.
+    const last = tick(clockNow()).filter((t) => t === 'meal-start' || t === 'meal-end' || t === 'landed').pop();
+    if (last === 'meal-start') {
+      mixer.cue('meal-start');
+      notifyIfHidden('Meal service', 'Your break has started. Step away from the work.');
+    } else if (last === 'meal-end') {
+      mixer.cue('meal-end', { sign: !rules?.autoResume });
+      notifyIfHidden('Meal service is over', rules?.autoResume ? 'Back to work. The flight continues.' : 'Fasten your seatbelt to resume the flight.');
+    } else if (last === 'landed') {
+      mixer.cue('landing');
+      notifyIfHidden('Landed', 'Welcome to your destination. Your stamp is waiting.');
     }
   }, [nowTs, flying, tick, rules?.autoResume]);
 
-  // Audio: started here (and on Board), unlocked by any click, stopped on exit.
+  // Audio: started here (and on Board), unlocked by any click. On exit the
+  // loops fade and the context stays open briefly so the landing cue can finish.
   useEffect(() => {
     mixer.start();
     const unlock = () => mixer.unlock();
@@ -102,12 +103,28 @@ export function InFlight() {
     return () => {
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
-      mixer.stop();
+      mixer.stop(7000);
     };
   }, []);
   useEffect(() => {
     if (rules) mixer.apply(profile.audio, rules.ambientAudio);
   }, [profile.audio, rules]);
+
+  // Engines and the seatbelt sign follow the flight phase.
+  const phaseNow = booking && session && flying ? flightView(booking, session, nowTs).phase : null;
+  const lastPhase = useRef<string | null>(null);
+  useEffect(() => {
+    if (!phaseNow || !session) return;
+    const prev = lastPhase.current;
+    lastPhase.current = phaseNow;
+    mixer.setPhase(phaseNow);
+    if (prev === null) {
+      // Just boarded (not a reload mid-flight): doors close, sign on.
+      if (clockNow() - (session.departedAt ?? 0) < 5000) mixer.cue('boarding');
+    } else if (prev === 'climbing' && phaseNow === 'cruising') mixer.cue('seatbelt-off');
+    else if (prev !== 'descending' && phaseNow === 'descending') mixer.cue('seatbelt-on');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phaseNow]);
 
   useEffect(() => (flying ? keepAwake() : undefined), [flying]);
 
@@ -230,7 +247,14 @@ export function InFlight() {
         )}
       </div>
       {waiting && (
-        <Button onClick={() => fasten(clockNow())} className="h-13 w-full px-8 text-[16px] md:w-auto" autoFocus>
+        <Button
+          onClick={() => {
+            mixer.cue('buckle');
+            fasten(clockNow());
+          }}
+          className="h-13 w-full px-8 text-[16px] md:w-auto"
+          autoFocus
+        >
           Fasten seatbelt
         </Button>
       )}
@@ -244,7 +268,13 @@ export function InFlight() {
       sub={inMeal ? MEAL_NAMES[v.activeMeal!.meal.kind] : v.nextMeal ? `${MEAL_NAMES[v.nextMeal.meal.kind]} · ${v.nextMeal.meal.lengthMin} min` : 'None left on this flight'}
     >
       {rules!.canDelay && v.nextMeal && !inMeal && !waiting && (
-        <Button variant="secondary" disabled={!v.canDelay} onClick={() => delay(clockNow())} className="mt-3 !min-h-11 w-full text-[13px]">
+        <Button
+          variant="secondary"
+          disabled={!v.canDelay}
+          onClick={() => {
+            mixer.cue('delay');
+            delay(clockNow());
+          }} className="mt-3 !min-h-11 w-full text-[13px]">
           {v.nextMeal.meal.delayed ? 'Already delayed' : 'Delay 10 min'}
         </Button>
       )}
@@ -279,6 +309,7 @@ export function InFlight() {
       onCancel={() => setDivertOpen(false)}
       onConfirm={() => {
         setDivertOpen(false);
+        mixer.cue('divert');
         divert(clockNow());
         nav(ROUTES.landing);
       }}

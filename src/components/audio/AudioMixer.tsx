@@ -53,7 +53,11 @@ export function AudioMixer({ audio, ambient, onChange }: Props) {
           </div>
         );
       })}
-      {!ambient && <p className="text-muted mt-1 text-[12px]">Middle seat: ambient audio is off. Chimes only.</p>}
+      <p className="text-muted mt-1 text-[12px]">
+        {ambient
+          ? 'Chime alerts cover the seatbelt sign, meal service, doors and touchdown.'
+          : 'Middle seat: ambient audio is off. Chimes only.'}
+      </p>
     </div>
   );
 }

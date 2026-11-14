@@ -1,6 +1,11 @@
 // Cabin audio. Every sound is synthesized with the Web Audio API, so there are
-// no audio files to license or download and it works offline. Each channel is
-// a gapless looped buffer with its own gain node.
+// no audio files to license or download and it works offline.
+//
+// Two kinds of sound:
+//  - Loops (cabin, rain, lo-fi): gapless buffers, one gain node per channel.
+//    The cabin loop also follows the flight phase (quiet taxi, loud climb...).
+//  - Cues (seatbelt sign, meal chime, buckle, touchdown...): short one-shots,
+//    all controlled by the "chime" channel.
 
 import type { AudioChannel } from '../engine/types';
 
@@ -140,12 +145,36 @@ const BUILD: Record<Loop, (ctx: BaseAudioContext) => AudioBuffer> = {
 };
 const LOOP_GAIN: Record<Loop, number> = { cabin: 0.5, rain: 0.6, lofi: 0.9 };
 
+/** How the engines sound in each part of the flight: [loudness, brightness in Hz]. */
+const ENGINE: Record<string, [number, number]> = {
+  taxiing: [0.55, 420],
+  climbing: [1.3, 1500],
+  cruising: [1, 900],
+  meal: [1, 900],
+  seatbelt: [1, 900],
+  descending: [0.8, 650],
+};
+
+export type Cue =
+  | 'boarding' // door closes, seatbelt sign on
+  | 'seatbelt-on' // one low bong
+  | 'seatbelt-off' // one higher ding
+  | 'meal-start' // hi-lo cabin chime
+  | 'meal-end' // hi-lo chime; with `sign`, the seatbelt bong follows
+  | 'buckle' // seatbelt click
+  | 'delay' // soft acknowledgement
+  | 'landing' // touchdown, reverse thrust, arrival chime
+  | 'divert'; // lo-lo alert
+
 export class Mixer {
   private ctx: AudioContext | null = null;
   private gains = new Map<Loop, GainNode>();
   private sources = new Map<Loop, AudioBufferSourceNode>();
+  private engineFilter: BiquadFilterNode | null = null;
   private settings: Settings | null = null;
   private ambient = true;
+  private phase = 'cruising';
+  private closing: ReturnType<typeof setTimeout> | undefined;
 
   static supported(): boolean {
     return typeof window !== 'undefined' && ('AudioContext' in window || 'webkitAudioContext' in window);
@@ -153,6 +182,8 @@ export class Mixer {
 
   /** Create the audio context. Call from a user gesture where possible. */
   start(): void {
+    clearTimeout(this.closing); // a new flight began before the old audio closed
+    this.closing = undefined;
     if (this.ctx || !Mixer.supported()) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const Ctor = window.AudioContext ?? (window as any).webkitAudioContext;
@@ -169,7 +200,11 @@ export class Mixer {
     return this.ctx?.state === 'running';
   }
 
-  /** `ambient` false (middle seats) silences everything except the chime. */
+  private engine(): [number, number] {
+    return ENGINE[this.phase] ?? ENGINE.cruising;
+  }
+
+  /** `ambient` false (middle seats) silences everything except the cues. */
   apply(settings: Settings, ambient: boolean): void {
     this.settings = settings;
     this.ambient = ambient;
@@ -184,60 +219,189 @@ export class Mixer {
         const src = ctx.createBufferSource();
         src.buffer = BUILD[ch](ctx); // built on first use
         src.loop = true;
-        src.connect(gain);
+        if (ch === 'cabin') {
+          // The engine note: a low-pass that opens up on the climb.
+          const f = ctx.createBiquadFilter();
+          f.type = 'lowpass';
+          f.frequency.value = this.engine()[1];
+          src.connect(f).connect(gain);
+          this.engineFilter = f;
+        } else src.connect(gain);
         src.start();
         this.gains.set(ch, gain);
         this.sources.set(ch, src);
       }
       const gain = this.gains.get(ch);
-      if (gain) gain.gain.setTargetAtTime(want ? settings[ch].vol * LOOP_GAIN[ch] : 0, ctx.currentTime, 0.15);
+      const level = settings[ch].vol * LOOP_GAIN[ch] * (ch === 'cabin' ? this.engine()[0] : 1);
+      if (gain) gain.gain.setTargetAtTime(want ? level : 0, ctx.currentTime, 0.15);
       if (!want && this.sources.has(ch)) {
         const src = this.sources.get(ch)!;
         this.sources.delete(ch);
+        if (ch === 'cabin') this.engineFilter = null;
         setTimeout(() => {
-          src.stop();
-          src.disconnect();
+          try {
+            src.stop();
+            src.disconnect();
+          } catch {
+            /* context already closed */
+          }
         }, 600);
       }
     }
   }
 
-  /** Two-tone cabin chime. */
-  chime(): void {
+  /** The engines follow the flight: spool up for the climb, ease off to descend. */
+  setPhase(phase: string): void {
+    if (phase === this.phase) return;
+    this.phase = phase;
+    const ctx = this.ctx;
+    const s = this.settings;
+    if (!ctx || !s) return;
+    const [loud, bright] = this.engine();
+    const gain = this.gains.get('cabin');
+    if (gain && this.ambient && s.cabin.on) gain.gain.setTargetAtTime(s.cabin.vol * LOOP_GAIN.cabin * loud, ctx.currentTime, 2.5);
+    this.engineFilter?.frequency.setTargetAtTime(bright, ctx.currentTime, 2.5);
+  }
+
+  // ---- cues --------------------------------------------------------------
+
+  /** A soft bell: a sine with two quieter overtones. */
+  private bell(freq: number, at: number, vol: number, length = 1.8): void {
+    const ctx = this.ctx!;
+    [
+      [1, 1],
+      [2, 0.28],
+      [3.01, 0.1],
+    ].forEach(([mult, amp]) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq * mult;
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(0.32 * vol * amp, at + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + length / mult);
+      osc.connect(g).connect(ctx.destination);
+      osc.start(at);
+      osc.stop(at + length / mult + 0.05);
+    });
+  }
+
+  /** A burst of filtered noise: clicks, thumps and whooshes. */
+  private noise(at: number, length: number, vol: number, type: BiquadFilterType, freq: number, attack = 0.005): void {
+    const ctx = this.ctx!;
+    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * length), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const f = ctx.createBiquadFilter();
+    f.type = type;
+    f.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol, at + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + length);
+    src.connect(f).connect(g).connect(ctx.destination);
+    src.start(at);
+  }
+
+  /** A low thud that drops in pitch: doors and wheels. */
+  private thud(at: number, vol: number, from = 110, to = 42): void {
+    const ctx = this.ctx!;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.frequency.setValueAtTime(from, at);
+    osc.frequency.exponentialRampToValueAtTime(to, at + 0.18);
+    g.gain.setValueAtTime(vol, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.4);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(at);
+    osc.stop(at + 0.45);
+  }
+
+  /**
+   * Play a cabin cue. All cues follow the "chime" switch and volume.
+   * `sign` on meal-end adds the seatbelt bong (seats that resume by hand).
+   */
+  cue(name: Cue, opts: { sign?: boolean } = {}): void {
     const ctx = this.ctx;
     const s = this.settings?.chime;
     if (!ctx || !s?.on) return;
     this.unlock();
-    const t0 = ctx.currentTime + 0.02;
-    [
-      [659.25, 0],
-      [523.25, 0.45],
-    ].forEach(([freq, at]) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      g.gain.setValueAtTime(0, t0 + at);
-      g.gain.linearRampToValueAtTime(0.4 * s.vol, t0 + at + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + 1.6);
-      osc.connect(g).connect(ctx.destination);
-      osc.start(t0 + at);
-      osc.stop(t0 + at + 1.7);
-    });
+    const v = s.vol;
+    const t = ctx.currentTime + 0.03;
+    switch (name) {
+      case 'boarding':
+        this.thud(t, 0.5 * v);
+        this.noise(t, 0.25, 0.25 * v, 'lowpass', 500);
+        this.noise(t + 0.32, 0.06, 0.2 * v, 'bandpass', 2400); // latch
+        this.bell(494, t + 1.1, v);
+        break;
+      case 'seatbelt-on':
+        this.bell(494, t, v);
+        break;
+      case 'seatbelt-off':
+        this.bell(740, t, v, 1.5);
+        break;
+      case 'meal-start':
+        this.bell(659.25, t, v);
+        this.bell(523.25, t + 0.45, v);
+        break;
+      case 'meal-end':
+        this.bell(659.25, t, v);
+        this.bell(523.25, t + 0.45, v);
+        if (opts.sign) this.bell(494, t + 1.7, v);
+        break;
+      case 'buckle':
+        this.noise(t, 0.035, 0.5 * v, 'bandpass', 3200, 0.001);
+        this.noise(t + 0.09, 0.05, 0.7 * v, 'bandpass', 1900, 0.001);
+        this.thud(t + 0.09, 0.18 * v, 240, 120);
+        break;
+      case 'delay':
+        this.bell(880, t, v * 0.6, 0.7);
+        break;
+      case 'landing':
+        this.thud(t, 0.7 * v);
+        this.noise(t, 0.3, 0.3 * v, 'lowpass', 300);
+        this.thud(t + 0.22, 0.4 * v, 90, 40); // nose wheel
+        this.noise(t + 0.4, 3.2, 0.22 * v, 'bandpass', 700, 1.1); // reverse thrust
+        this.bell(523.25, t + 3.4, v);
+        this.bell(659.25, t + 3.75, v);
+        this.bell(783.99, t + 4.1, v, 2.4);
+        break;
+      case 'divert':
+        this.bell(440, t, v);
+        this.bell(349.23, t + 0.4, v);
+        break;
+    }
   }
 
-  stop(): void {
-    for (const src of this.sources.values()) {
-      try {
-        src.stop();
-      } catch {
-        /* already stopped */
+  /**
+   * Fade the loops and close the audio. `tailMs` keeps the context alive long
+   * enough for a last cue (the landing) to finish.
+   */
+  stop(tailMs = 0): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    for (const g of this.gains.values()) g.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+    clearTimeout(this.closing);
+    const close = () => {
+      this.closing = undefined;
+      for (const src of this.sources.values()) {
+        try {
+          src.stop();
+        } catch {
+          /* already stopped */
+        }
       }
-    }
-    this.sources.clear();
-    this.gains.clear();
-    void this.ctx?.close();
-    this.ctx = null;
+      this.sources.clear();
+      this.gains.clear();
+      this.engineFilter = null;
+      void this.ctx?.close();
+      this.ctx = null;
+    };
+    if (tailMs > 0) this.closing = setTimeout(close, tailMs);
+    else close();
   }
 }
 

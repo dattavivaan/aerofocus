@@ -223,3 +223,49 @@ test('no serious accessibility violations on any screen', async ({ page }) => {
   await page.getByRole('link', { name: 'Flight log' }).click();
   await check('flight log');
 });
+
+test('cabin cues play at boarding, meal service, seatbelt and landing', async ({ page }) => {
+  // Count the tones the mixer starts.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __tones: number };
+    w.__tones = 0;
+    const make = AudioContext.prototype.createOscillator;
+    AudioContext.prototype.createOscillator = function (...args) {
+      w.__tones++;
+      return make.apply(this, args);
+    };
+  });
+  const tones = () => page.evaluate(() => (window as unknown as { __tones: number }).__tones);
+  await start(page);
+  await bookAndBoard(page, 'PDX', '14A', 'Beverage Service · 5 min');
+  await page.clock.runFor(1500);
+  const boarded = await tones();
+  expect(boarded).toBeGreaterThan(0); // door + seatbelt sign
+  await skip(page, '10:00'); // climbing
+  await skip(page, '05:00'); // climb → cruise: sign off
+  const cruising = await tones();
+  expect(cruising).toBeGreaterThan(boarded);
+  await skip(page, '05:30'); // meal service starts
+  const meal = await tones();
+  expect(meal).toBeGreaterThan(cruising);
+  await skip(page, '05:00'); // meal ends: chime + seatbelt sign
+  const over = await tones();
+  expect(over).toBeGreaterThan(meal);
+  await page.getByRole('button', { name: 'Fasten seatbelt' }).click(); // buckle
+  await page.clock.runFor(500);
+  const buckled = await tones();
+  expect(buckled).toBeGreaterThan(over);
+  await skip(page, '05:00'); // descent: sign on
+  const descending = await tones();
+  expect(descending).toBeGreaterThan(buckled);
+  await skip(page, '15:30'); // touchdown + arrival chime
+  await page.waitForURL('**/landing');
+  expect(await tones()).toBeGreaterThan(descending);
+});
+
+test('sign-in offers email and Google only', async ({ page }) => {
+  await page.goto('/');
+  if (page.viewportSize()!.width < 768) await page.getByRole('button', { name: 'Check in with an account' }).click();
+  await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Apple/ })).toHaveCount(0);
+});

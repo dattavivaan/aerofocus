@@ -106,11 +106,12 @@ export async function signInEmail(email: string, password: string): Promise<Auth
   }
 }
 
-export async function signInOAuth(provider: 'google' | 'apple'): Promise<AuthResult> {
+/** Google sign-in (redirects to Google and back). */
+export async function signInOAuth(): Promise<AuthResult> {
   if (!useAuth.getState().configured) return NOT_SET_UP;
   try {
     const db = await supabase();
-    const { error } = await db.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin } });
+    const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
     return error ? { ok: false, error: error.message } : { ok: true, note: 'Opening the sign-in page…' };
   } catch {
     return { ok: false, error: 'Could not reach the sign-in service. You can still fly with a Guest Pass.' };

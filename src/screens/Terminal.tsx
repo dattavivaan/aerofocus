@@ -78,14 +78,9 @@ function SignInCard({ onGuest, compact }: { onGuest: () => void; compact?: boole
           Check in
         </Button>
       </form>
-      <div className="grid grid-cols-2 gap-2.5">
-        <Button variant="secondary" disabled={busy} onClick={() => void run(() => signInOAuth('google'))}>
-          Google
-        </Button>
-        <Button variant="secondary" disabled={busy} onClick={() => void run(() => signInOAuth('apple'))}>
-          Apple
-        </Button>
-      </div>
+      <Button variant="secondary" disabled={busy} onClick={() => void run(() => signInOAuth())}>
+        Continue with Google
+      </Button>
       </>)}
       {msg && (
         <p role="status" className={`text-[13px] ${msg.bad ? 'text-divert' : 'text-sky'}`}>
