@@ -177,3 +177,9 @@
     animation-duration: 0.2s !important;
   }
 }
+
+/* Phone: keep the map attribution clear of the timer card that overlaps the map. */
+.map-mobile .maplibregl-ctrl-bottom-right,
+.map-mobile .maplibregl-ctrl-bottom-left {
+  bottom: 104px;
+}

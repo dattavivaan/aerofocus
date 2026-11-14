@@ -45,7 +45,7 @@ const toUser = (u: User): AuthUser => ({
 let activeUserId: string | null = null;
 
 /** Point the app at the right storage for whoever is signed in. */
-async function useStorageFor(user: User | null): Promise<void> {
+async function switchStorageFor(user: User | null): Promise<void> {
   const id = user?.id ?? null;
   if (id === activeUserId && useProfile.getState().hydrated) return;
   activeUserId = id;
@@ -72,9 +72,9 @@ export async function initAuth(): Promise<void> {
   try {
     const db = await supabase();
     const { data } = await db.auth.getSession();
-    await useStorageFor(data.session?.user ?? null);
+    await switchStorageFor(data.session?.user ?? null);
     db.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') void useStorageFor(session?.user ?? null);
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') void switchStorageFor(session?.user ?? null);
     });
   } catch (e) {
     console.warn('AeroFocus: sign-in is unavailable, continuing as a guest', e);
@@ -88,7 +88,7 @@ export async function signInEmail(email: string, password: string): Promise<Auth
     const db = await supabase();
     const signIn = await db.auth.signInWithPassword({ email, password });
     if (!signIn.error) {
-      await useStorageFor(signIn.data.user);
+      await switchStorageFor(signIn.data.user);
       return { ok: true };
     }
     if (!/invalid login credentials/i.test(signIn.error.message)) return { ok: false, error: signIn.error.message };
@@ -99,7 +99,7 @@ export async function signInEmail(email: string, password: string): Promise<Auth
     // Supabase returns a user with no identities when the email already exists.
     if (signUp.data.user && signUp.data.user.identities?.length === 0) return { ok: false, error: 'Wrong password for that email.' };
     if (!signUp.data.session) return { ok: true, note: 'Check your email to confirm your account, then check in again.' };
-    await useStorageFor(signUp.data.user);
+    await switchStorageFor(signUp.data.user);
     return { ok: true };
   } catch {
     return { ok: false, error: 'Could not reach the sign-in service. You can still fly with a Guest Pass.' };
@@ -121,5 +121,5 @@ export async function signOut(): Promise<void> {
   if (!useAuth.getState().configured) return;
   const db = await supabase();
   await db.auth.signOut();
-  await useStorageFor(null);
+  await switchStorageFor(null);
 }

@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "build:airports": "tsx scripts/build-airports.ts"
+    "build:airports": "tsx scripts/build-airports.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

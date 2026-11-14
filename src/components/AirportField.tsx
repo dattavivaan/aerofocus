@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { airport, searchAirports } from '../data/airports';
 import type { Airport, Iata } from '../engine/types';
 
@@ -19,8 +19,6 @@ export function AirportField({ label, value, exclude, onChange, placeholder }: P
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const results = open ? searchAirports(query, 6, exclude) : [];
-
-  useEffect(() => setActive(0), [query]);
 
   const pick = (a: Airport) => {
     onChange(a.iata);
@@ -71,10 +69,12 @@ export function AirportField({ label, value, exclude, onChange, placeholder }: P
           value={open ? query : selected ? `${selected.city} · ${selected.name}` : ''}
           onFocus={() => {
             setOpen(true);
+            setActive(0);
             setQuery('');
           }}
           onBlur={() => setTimeout(() => setOpen(false), 120)}
           onChange={(e) => {
+            setActive(0);
             setQuery(e.target.value);
             setOpen(true);
           }}

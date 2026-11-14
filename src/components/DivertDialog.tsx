@@ -20,8 +20,10 @@ export function DivertDialog({ holdSec, focusedMin, onConfirm, onCancel }: Props
   // and set up the listeners once. Otherwise each tick would cancel the hold.
   const cancelFn = useRef(onCancel);
   const confirmFn = useRef(onConfirm);
-  cancelFn.current = onCancel;
-  confirmFn.current = onConfirm;
+  useEffect(() => {
+    cancelFn.current = onCancel;
+    confirmFn.current = onConfirm;
+  });
 
   useEffect(() => {
     cancelRef.current?.focus();

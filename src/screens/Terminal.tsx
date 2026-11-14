@@ -147,11 +147,13 @@ export function Terminal() {
                     e.stopPropagation();
                     book(d.airport.iata);
                   }}
-                  aria-label={`Book ${home.city} to ${d.airport.city}, ${formatBlock(d.blockMin)}`}
                   className="flex min-h-11 cursor-pointer items-center gap-2 text-left"
                 >
                   <FlapText text={d.airport.iata} delay={i * 90 + 120} />
                   <span className="text-muted hidden max-w-[150px] truncate text-[13px] lg:inline">{d.airport.city}</span>
+                  <span className="sr-only">
+                    {d.airport.city}: book this flight, {formatBlock(d.blockMin)}
+                  </span>
                 </button>
               </td>
               <td className="py-2">

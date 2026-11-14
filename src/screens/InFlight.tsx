@@ -134,9 +134,9 @@ export function InFlight() {
 
   const header = (
     <header className="glass z-30 mx-auto flex w-full max-w-[1344px] items-center gap-2 rounded-full py-1.5 pr-1.5 pl-4 md:gap-4 md:pl-6">
-      <PlaneIcon size={18} rotate={45} className="text-accent shrink-0" />
+      <PlaneIcon size={18} rotate={45} className="text-accent hidden shrink-0 md:block" />
       <span className="font-mono text-[14px] font-bold md:text-[16px]">{booking.flightNo}</span>
-      <span className="font-mono text-[14px] md:text-[16px]">
+      <span className="font-mono text-[14px] whitespace-nowrap md:text-[16px]">
         {from.iata} <span className="text-accent">→</span> {to.iata}
       </span>
       <span className="label hidden md:inline">
@@ -144,7 +144,7 @@ export function InFlight() {
       </span>
       <span
         role="status"
-        className={`label ml-auto flex min-h-8 items-center rounded-full px-3 !text-[11px] ${inMeal || waiting ? 'bg-sky/15 !text-sky' : 'bg-accent/15 !text-accent'}`}
+        className={`label ml-auto flex min-h-8 items-center rounded-full px-3 !text-[11px] whitespace-nowrap ${inMeal || waiting ? 'bg-sky/15 !text-sky' : 'bg-accent/15 !text-accent'}`}
       >
         {PHASE_LABEL[v.phase]}
       </span>
@@ -160,7 +160,7 @@ export function InFlight() {
   );
 
   const map = (
-    <div className={`relative overflow-hidden ${mobile ? 'h-[470px]' : 'border-border h-[470px] rounded-[28px] border shadow-[var(--shadow-card)]'}`}>
+    <div className={`relative overflow-hidden ${mobile ? 'map-mobile h-[470px]' : 'border-border h-[470px] rounded-[28px] border shadow-[var(--shadow-card)]'}`}>
       <Suspense fallback={<div className="bg-surface-sunk absolute inset-0" />}>
         <FlightMap from={from} to={to} progress={v.progress} mode={mode} onSlow={onSlow} className="absolute inset-0" />
       </Suspense>
