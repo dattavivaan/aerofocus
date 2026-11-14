@@ -99,3 +99,81 @@
     color: var(--text-muted);
   }
 }
+
+@layer components {
+  /* Split-flap cell: dark tile with a 1px line across the middle. */
+  .flap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15em;
+    height: 1.7em;
+    border-radius: 3px;
+    background: var(--flap);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    line-height: 1;
+  }
+  .flap::after {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto 0;
+    height: 1px;
+    background: #000;
+  }
+  .flap-anim {
+    animation: flap-flip 0.5s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+    transform-origin: 50% 50%;
+    backface-visibility: hidden;
+  }
+  @keyframes flap-flip {
+    0% {
+      transform: perspective(200px) rotateX(-88deg);
+      opacity: 0;
+    }
+    60% {
+      transform: perspective(200px) rotateX(12deg);
+      opacity: 1;
+    }
+    100% {
+      transform: perspective(200px) rotateX(0);
+    }
+  }
+
+  .input {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-sunk);
+    padding: 0 14px;
+    font-size: 16px;
+    color: var(--text);
+  }
+  .input::placeholder {
+    color: color-mix(in srgb, var(--text-muted) 70%, transparent);
+  }
+
+  .fade-in {
+    animation: fade-in 0.25s ease both;
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .fade-in {
+    animation-duration: 0.2s !important;
+  }
+}
