@@ -43,10 +43,15 @@ export function memoryKeyValue(): KeyValue {
   };
 }
 
-const KEYS = { profile: 'af:profile', bookings: 'af:bookings', sessions: 'af:sessions', stamps: 'af:stamps' };
 
 /** Adapter over any key-value store. Guest mode uses it with IndexedDB. */
-export function keyValueAdapter(kv: KeyValue, kind: 'local' | 'memory'): StorageAdapter {
+export function keyValueAdapter(kv: KeyValue, kind: 'local' | 'memory', prefix = 'af:'): StorageAdapter {
+  const KEYS = {
+    profile: `${prefix}profile`,
+    bookings: `${prefix}bookings`,
+    sessions: `${prefix}sessions`,
+    stamps: `${prefix}stamps`,
+  };
   return {
     kind,
     async loadAll() {

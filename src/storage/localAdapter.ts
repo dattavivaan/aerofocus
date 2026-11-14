@@ -8,7 +8,8 @@ const idb: KeyValue = {
 };
 
 /** Guest storage: IndexedDB on the device, or memory where it is unavailable. */
-export function createLocalAdapter(): StorageAdapter {
+/** `userId` keeps an account's offline copy apart from guest data. */
+export function createLocalAdapter(userId?: string): StorageAdapter {
   const hasIdb = typeof indexedDB !== 'undefined';
-  return keyValueAdapter(hasIdb ? idb : memoryKeyValue(), hasIdb ? 'local' : 'memory');
+  return keyValueAdapter(hasIdb ? idb : memoryKeyValue(), hasIdb ? 'local' : 'memory', userId ? `af:u:${userId}:` : 'af:');
 }

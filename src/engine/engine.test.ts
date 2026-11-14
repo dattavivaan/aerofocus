@@ -8,7 +8,8 @@ import { moveSeat, seatLabel, seatTypeFor, SEAT_RULES } from './seats';
 import { applyOutcome, currentStreak, defaultProfile, localDay } from './stats';
 import { advance, board, canDelay, delayNextMeal, divert, elapsedMs, fastenSeatbelt, newSession, openPass, view } from './timer';
 import type { Airport, Booking, MealService, Session } from './types';
-import { keyValueAdapter, memoryKeyValue } from '../storage/adapter';
+import { keyValueAdapter, memoryKeyValue, type AppData } from '../storage/adapter';
+import { adoptGuestData, mergeData, syncedAdapter } from '../storage/merge';
 
 const airports = airportsJson as Airport[];
 const ap = (code: string) => airports.find((a) => a.iata === code)!;
@@ -391,5 +392,87 @@ describe('sky', () => {
     expect(skyAt(0.88).label).toBe('Dusk');
     expect(skyAt(1)).toMatchObject({ label: 'Night', stars: 1 });
     expect(skyAt(5).top).toBe(skyAt(1).top);
+  });
+});
+
+describe('account sync', () => {
+  const flight = (id: string, dest: string, endedAt: number, state: 'landed' | 'diverted' = 'landed') => ({
+    booking: booking({ id: `b${id}`, destination: dest }),
+    session: { id: `s${id}`, bookingId: `b${id}`, state, departedAt: endedAt - 110 * MIN, endedAt, pauses: [], events: [], focusedMin: state === 'landed' ? 95 : 30 } as Session,
+  });
+  const dataOf = (flights: ReturnType<typeof flight>[], profile: AppData['profile'] = null): AppData => ({
+    profile, bookings: flights.map((f) => f.booking), sessions: flights.map((f) => f.session), stamps: [],
+  });
+  const d = (n: number) => new Date(2026, 10, n, 15).getTime();
+
+  it('merging guest data into an account keeps every flight and rebuilds the totals', () => {
+    const account = dataOf([flight('1', 'SFO', d(10))], { ...defaultProfile(), units: 'km', homeAirport: 'LAX' });
+    const guest = dataOf([flight('2', 'PDX', d(11)), flight('3', 'SFO', d(12)), flight('4', 'NRT', d(12), 'diverted')]);
+    const m = mergeData(account, guest);
+    expect(m.sessions).toHaveLength(4);
+    expect(m.profile!.totals).toEqual({ focusMin: 95 * 3 + 30, miles: 679 * 3, flights: 3, diverted: 1 });
+    expect(m.profile!.streak).toMatchObject({ current: 3, best: 3 });
+    expect(m.profile).toMatchObject({ units: 'km', homeAirport: 'LAX' });
+    expect(m.stamps.find((s) => s.iata === 'SFO')).toMatchObject({ visits: 2, firstAt: d(10), lastAt: d(12) });
+    expect(m.stamps.map((s) => s.iata).sort()).toEqual(['PDX', 'SFO']);
+  });
+
+  it('merging the same data twice does not double-count', () => {
+    const a = dataOf([flight('1', 'SFO', d(10)), flight('2', 'PDX', d(11))]);
+    const once = mergeData(a, a);
+    const twice = mergeData(once, a);
+    expect(twice.profile!.totals).toEqual(once.profile!.totals);
+    expect(twice.profile!.totals.flights).toBe(2);
+    expect(twice.stamps).toEqual(once.stamps);
+  });
+
+  it('keeps the finished copy of a session over an older in-flight copy', () => {
+    const f = flight('1', 'SFO', d(10));
+    const stale = { ...f.session, state: 'focus' as const, endedAt: undefined, focusedMin: 0 };
+    const m = mergeData(dataOf([{ booking: f.booking, session: stale }]), dataOf([f]));
+    expect(m.sessions[0].state).toBe('landed');
+    expect(m.profile!.totals.flights).toBe(1);
+  });
+
+  it('signing up moves guest flights into the account and empties the guest copy', async () => {
+    const guest = keyValueAdapter(memoryKeyValue(), 'memory');
+    const cloud = keyValueAdapter(memoryKeyValue(), 'memory');
+    const device = keyValueAdapter(memoryKeyValue(), 'memory', 'af:u:1:');
+    const f = flight('1', 'PDX', d(10));
+    await guest.saveBooking(f.booking);
+    await guest.saveSession(f.session);
+    await guest.saveProfile(defaultProfile());
+    const account = syncedAdapter(device, cloud);
+    await adoptGuestData(guest, account);
+    expect((await guest.loadAll()).sessions).toEqual([]);
+    const loaded = await account.loadAll();
+    expect(loaded.sessions).toHaveLength(1);
+    expect(loaded.profile!.totals.flights).toBe(1);
+    await new Promise((r) => setTimeout(r, 10));
+    expect((await cloud.loadAll()).sessions).toHaveLength(1);
+  });
+
+  it('works offline: a failing cloud falls back to the device copy and uploads later', async () => {
+    const device = keyValueAdapter(memoryKeyValue(), 'memory');
+    const cloud = keyValueAdapter(memoryKeyValue(), 'memory');
+    let online = false;
+    const flaky = new Proxy(cloud, {
+      get: (t, k: keyof typeof cloud) =>
+        typeof t[k] === 'function' ? (...a: unknown[]) => (online ? (t[k] as (...x: unknown[]) => unknown)(...a) : Promise.reject(new Error('offline'))) : t[k],
+    });
+    const account = syncedAdapter(device, flaky);
+    const f = flight('1', 'PDX', d(10));
+    const warn = console.warn;
+    console.warn = () => {};
+    await account.saveBooking(f.booking);
+    await account.saveSession(f.session);
+    expect((await account.loadAll()).sessions).toHaveLength(1);
+    console.warn = warn;
+    expect((await cloud.loadAll()).sessions).toHaveLength(0);
+    online = true;
+    await account.loadAll();
+    await new Promise((r) => setTimeout(r, 10));
+    expect((await cloud.loadAll()).sessions).toHaveLength(1);
+    expect((await cloud.loadAll()).profile!.totals.flights).toBe(1);
   });
 });
