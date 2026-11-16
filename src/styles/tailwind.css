@@ -12,6 +12,7 @@
   --color-accent: var(--accent);
   --color-on-accent: var(--on-accent);
   --color-sky: var(--sky);
+  --color-gold: var(--gold);
   --color-divert: var(--divert);
   --color-divert-bg: var(--divert-bg);
   --color-paper: var(--paper);
@@ -63,9 +64,9 @@
   /* Soft glows behind every screen. */
   .screen-bg {
     background:
-      radial-gradient(40rem 32rem at var(--glow-1), var(--glow-amber), transparent 70%),
-      radial-gradient(46rem 36rem at var(--glow-2), var(--glow-blue), transparent 70%),
-      radial-gradient(40rem 30rem at var(--glow-3), var(--glow-clay), transparent 70%),
+      radial-gradient(40rem 32rem at var(--glow-1), var(--glow-a), transparent 70%),
+      radial-gradient(46rem 36rem at var(--glow-2), var(--glow-b), transparent 70%),
+      radial-gradient(40rem 30rem at var(--glow-3), var(--glow-c), transparent 70%),
       var(--bg);
   }
 
@@ -201,14 +202,14 @@
   @keyframes seat-pop {
     0% {
       transform: scale(0.92);
-      box-shadow: 0 0 0 0 rgba(242, 179, 61, 0.55);
+      box-shadow: 0 0 0 0 rgba(142, 193, 255, 0.55);
     }
     60% {
       transform: scale(1.06);
     }
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 12px rgba(242, 179, 61, 0);
+      box-shadow: 0 0 0 12px rgba(142, 193, 255, 0);
     }
   }
 

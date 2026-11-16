@@ -9,8 +9,8 @@ export function FirstClassNotice() {
   const close = () => update({ firstClassNoticeShown: true });
   return (
     <div className="fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 md:items-center" onClick={close}>
-      <div role="alertdialog" aria-modal="true" aria-labelledby="fc-title" aria-describedby="fc-desc" className="card border-accent/60 w-full max-w-[440px] p-6" onClick={(e) => e.stopPropagation()}>
-        <p className="label !text-accent">★ 25 focus hours</p>
+      <div role="alertdialog" aria-modal="true" aria-labelledby="fc-title" aria-describedby="fc-desc" className="card border-gold/60 w-full max-w-[440px] p-6" onClick={(e) => e.stopPropagation()}>
+        <p className="label !text-gold">★ 25 focus hours</p>
         <h2 id="fc-title" className="mt-2 text-[26px]">
           First class is unlocked
         </h2>

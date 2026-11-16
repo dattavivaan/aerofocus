@@ -104,8 +104,8 @@ export function Globe({ from, to, size = 200 }: { from: LatLon; to?: LatLon; siz
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" className="shrink-0">
       <defs>
         <radialGradient id="globe-sea" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#1c2a40" />
-          <stop offset="1" stopColor="#0b1019" />
+          <stop offset="0" stopColor="#1b3566" />
+          <stop offset="1" stopColor="#07101f" />
         </radialGradient>
         <clipPath id="globe-clip">
           <circle cx={r} cy={r} r={r - 1} />
@@ -113,7 +113,7 @@ export function Globe({ from, to, size = 200 }: { from: LatLon; to?: LatLon; siz
       </defs>
       <circle cx={r} cy={r} r={r - 1} fill="url(#globe-sea)" stroke="var(--border)" />
       <g clipPath="url(#globe-clip)">
-        <path d={land} fill="#27364a" stroke="#3a4b63" strokeWidth="0.5" />
+        <path d={land} fill="#26427a" stroke="#3d5f9e" strokeWidth="0.5" />
         {arc && <path d={arc} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />}
       </g>
       {a && <circle cx={a[0]} cy={a[1]} r="3.5" fill="var(--accent)" />}
