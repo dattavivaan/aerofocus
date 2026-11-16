@@ -9,6 +9,7 @@ import { FlightLog } from '../screens/FlightLog';
 import { Landing } from '../screens/Landing';
 import { Passport } from '../screens/Passport';
 import { Seat } from '../screens/Seat';
+import { SignIn } from '../screens/SignIn';
 import { Terminal } from '../screens/Terminal';
 import { useProfile } from '../store/profileStore';
 import { useSession } from '../store/sessionStore';
@@ -37,6 +38,7 @@ export function App() {
         <Route path={ROUTES.landing} element={<Landing />} />
         <Route path={ROUTES.passport} element={<Passport />} />
         <Route path={ROUTES.log} element={<FlightLog />} />
+        <Route path={ROUTES.signin} element={<SignIn />} />
         <Route path="*" element={<Navigate to={ROUTES.terminal} replace />} />
       </Routes>
     </BrowserRouter>
