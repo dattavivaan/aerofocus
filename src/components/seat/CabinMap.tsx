@@ -59,9 +59,9 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
         aria-label={locked ? `${seatLabel(code)}, locked until 25 focus hours` : seatLabel(code)}
         tabIndex={on ? 0 : -1}
         onClick={() => onSelect(code)}
-        className={`flex size-11 shrink-0 cursor-pointer lg:size-[52px] lg:text-[12px] items-center justify-center rounded-[12px_12px_8px_8px] border font-mono text-[11px] font-semibold transition disabled:cursor-not-allowed ${
+        className={`flex size-11 shrink-0 cursor-pointer lg:size-[52px] lg:text-[12px] items-center justify-center rounded-[12px_12px_8px_8px] border font-mono text-[11px] font-semibold transition enabled:hover:scale-105 enabled:active:scale-95 disabled:cursor-not-allowed ${
           on
-            ? 'bg-accent border-accent text-on-accent shadow-[0_0_18px_rgba(242,179,61,0.45)]'
+            ? 'seat-pop bg-accent border-accent text-on-accent shadow-[0_0_18px_rgba(242,179,61,0.45)]'
             : locked
               ? 'border-border text-muted/50 bg-surface-sunk'
               : `bg-surface-sunk hover:bg-surface ${TYPE_STYLE[type]}`
@@ -82,10 +82,14 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
     </span>
   );
 
-  const row = (n: number, letters: readonly string[], locked: boolean) => {
+  const row = (n: number, letters: readonly string[], locked: boolean, index = 0) => {
     const half = letters.length / 2;
     return (
-      <div key={n} className={`flex items-center ${vertical ? 'flex-row gap-1' : 'flex-col gap-1 lg:gap-1.5'} ${n === EXIT_ROW ? (vertical ? 'mt-3' : 'ml-3') : ''}`}>
+      <div
+        key={n}
+        style={{ animationDelay: `${Math.min(index, 22) * 22}ms` }}
+        className={`seat-row-in flex items-center ${vertical ? 'flex-row gap-1' : 'flex-col gap-1 lg:gap-1.5'} ${n === EXIT_ROW ? (vertical ? 'mt-3' : 'ml-3') : ''}`}
+      >
         {letters.slice(0, half).map((l) => seat(`${n}${l}`, locked))}
         {rowNum(n)}
         {letters.slice(half).map((l) => seat(`${n}${l}`, locked))}
@@ -117,7 +121,7 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
         {plan.hasFirst && (
           <>
             <div className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
-              {FIRST_ROWS.map((n) => row(n, FIRST_LETTERS, !firstUnlocked))}
+              {FIRST_ROWS.map((n, i) => row(n, FIRST_LETTERS, !firstUnlocked, i))}
             </div>
             <span className={`label !text-[9px] ${vertical ? 'my-2' : 'mx-2 [writing-mode:vertical-rl]'}`}>
               {firstUnlocked ? 'First class' : 'First · 25 h to unlock'}
@@ -125,7 +129,7 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
           </>
         )}
         <div className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
-          {plan.rows.map((n) => row(n, plan.letters, false))}
+          {plan.rows.map((n, i) => row(n, plan.letters, false, i + (plan.hasFirst ? FIRST_ROWS.length : 0)))}
         </div>
       </div>
      </div>

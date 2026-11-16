@@ -39,7 +39,7 @@ export function StepPills({ current }: { current: number }) {
           <span
             aria-current={s.n === current ? 'step' : undefined}
             className={`label flex min-h-9 items-center gap-2 rounded-full px-3 ${
-              s.n === current ? 'bg-accent !text-on-accent' : s.n < current ? '!text-text' : ''
+              s.n === current ? 'pill-in bg-accent !text-on-accent' : s.n < current ? '!text-text' : ''
             }`}
           >
             <span className="opacity-70">{s.n}</span>
@@ -95,7 +95,7 @@ export function MobileStepHeader({ back, step, title }: { back: string; step: nu
 export function Screen({ glows, children, className = '' }: { glows: [string, string, string]; children: ReactNode; className?: string }) {
   return (
     <div
-      className={`screen-bg min-h-dvh overflow-x-clip px-4 pt-3 pb-10 md:px-8 ${className}`}
+      className={`screen-bg page-in min-h-dvh overflow-x-clip px-4 pt-3 pb-10 md:px-8 ${className}`}
       style={{ '--glow-1': glows[0], '--glow-2': glows[1], '--glow-3': glows[2] } as React.CSSProperties}
     >
       {children}
