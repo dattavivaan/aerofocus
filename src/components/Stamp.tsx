@@ -9,7 +9,7 @@ export interface StampInfo {
   visits?: number;
 }
 
-const INK = '#F2B33D';
+const INK = '#8EC1FF';
 const GOLD = '#FFD978';
 
 /** A round passport stamp. */
@@ -52,7 +52,7 @@ export async function stampPng(stamp: StampInfo): Promise<Blob> {
   canvas.height = S;
   const g = canvas.getContext('2d')!;
   const c = stamp.gold ? GOLD : INK;
-  g.fillStyle = '#0A0E14';
+  g.fillStyle = '#060B17';
   g.fillRect(0, 0, S, S);
   const glow = g.createRadialGradient(S * 0.3, S * 0.2, 0, S * 0.3, S * 0.2, S * 0.8);
   glow.addColorStop(0, 'rgba(78,128,214,0.35)');
@@ -101,7 +101,7 @@ export async function stampPng(stamp: StampInfo): Promise<Blob> {
   g.fillText(stamp.gold ? '★ FIRST CLASS ★' : `AEROFOCUS${stamp.flightNo ? ` · ${stamp.flightNo}` : ''}`, 0, 280);
   g.restore();
 
-  g.fillStyle = '#C3CAD3';
+  g.fillStyle = '#B7C5DF';
   g.font = `500 34px ${mono}`;
   g.textAlign = 'center';
   g.fillText('EVERY FOCUS SESSION IS A FLIGHT', S / 2, S - 70);

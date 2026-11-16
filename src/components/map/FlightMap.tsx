@@ -172,13 +172,13 @@ export default function FlightMap(props: Props) {
         style={{ position: 'absolute', inset: 0 }}
       >
         <Source id="rest" type="geojson" data={rest}>
-          <Layer id="rest" type="line" paint={{ 'line-color': '#8CB8E8', 'line-width': 2.5, 'line-dasharray': [2, 2] }} layout={{ 'line-cap': 'round' }} />
+          <Layer id="rest" type="line" paint={{ 'line-color': '#6FD6E8', 'line-width': 2.5, 'line-dasharray': [2, 2] }} layout={{ 'line-cap': 'round' }} />
         </Source>
         <Source id="flown" type="geojson" data={flown}>
-          <Layer id="flown" type="line" paint={{ 'line-color': '#F2B33D', 'line-width': 4 }} layout={{ 'line-cap': 'round' }} />
+          <Layer id="flown" type="line" paint={{ 'line-color': '#8EC1FF', 'line-width': 4 }} layout={{ 'line-cap': 'round' }} />
         </Source>
         <Marker longitude={pos.lon} latitude={pos.lat} rotation={heading} rotationAlignment="map" pitchAlignment="map">
-          <span className="text-accent block drop-shadow-[0_0_10px_rgba(242,179,61,0.8)]">
+          <span className="text-accent block drop-shadow-[0_0_10px_rgba(142,193,255,0.8)]">
             <PlaneIcon size={38} />
           </span>
         </Marker>

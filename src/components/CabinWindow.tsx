@@ -14,7 +14,7 @@ export function CabinWindow({ progress, compact }: { progress: number; compact?:
       <div
         role="img"
         aria-label={`Cabin window: ${sky.label.toLowerCase()}`}
-        className={`relative overflow-hidden border-[6px] border-[#232b36] shadow-[inset_0_0_24px_rgba(0,0,0,0.55)] ${compact ? 'h-24 w-16 rounded-[28px]' : 'h-[150px] w-[108px] rounded-[44px]'}`}
+        className={`relative overflow-hidden border-[6px] border-[#1b2a4a] shadow-[inset_0_0_24px_rgba(0,0,0,0.55)] ${compact ? 'h-24 w-16 rounded-[28px]' : 'h-[150px] w-[108px] rounded-[44px]'}`}
         style={{ background: `linear-gradient(180deg, ${sky.top} 0%, ${sky.mid} 62%, ${sky.low} 100%)`, transition: 'background 1s linear' }}
       >
         <svg viewBox="0 0 100 140" className="absolute inset-0 size-full" aria-hidden="true">
@@ -30,7 +30,7 @@ export function CabinWindow({ progress, compact }: { progress: number; compact?:
             <ellipse cx="52" cy="108" rx="22" ry="6" opacity="0.6" />
           </g>
           {/* wing tip */}
-          <path d="M100 96 L58 112 L62 116 L100 110 Z" fill="#1a2029" opacity="0.92" />
+          <path d="M100 96 L58 112 L62 116 L100 110 Z" fill="#101a30" opacity="0.92" />
         </svg>
       </div>
       {!compact && <span className="label ml-5">{sky.label}</span>}
