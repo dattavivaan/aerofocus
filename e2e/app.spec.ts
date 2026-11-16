@@ -149,12 +149,12 @@ test('keyboard only: book, pick a seat with the arrow keys, board and divert', a
   await page.keyboard.press('Enter');
   await page.waitForURL('**/seat');
   await page.getByRole('button', { name: 'Seat 14A, window' }).focus();
-  await page.keyboard.press('ArrowDown'); // towards F
+  await page.keyboard.press('ArrowDown'); // towards F (a 45 min flight is a 4-across regional jet: A, C, D, F)
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('ArrowLeft'); // towards the nose
-  await expect(page.getByRole('button', { name: 'Seat 13C, aisle' })).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Seat 13C, aisle' })).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: 'Confirm seat 13C' }).focus();
+  await expect(page.getByRole('button', { name: 'Seat 13D, aisle' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Seat 13D, aisle' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Confirm seat 13D' }).focus();
   await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Board flight' }).first().focus();
   await page.keyboard.press('Enter');
@@ -261,6 +261,37 @@ test('cabin cues play at boarding, meal service, seatbelt and landing', async ({
   await skip(page, '15:30'); // touchdown + arrival chime
   await page.waitForURL('**/landing');
   expect(await tones()).toBeGreaterThan(descending);
+});
+
+test('the seat plan grows with the flight and the step pills match the page', async ({ page }) => {
+  await start(page);
+  await chooseDestination(page, 'spokane'); // 55 min
+  if (page.viewportSize()!.width >= 768) await expect(page.getByLabel('Booking steps').locator('[aria-current="step"]')).toHaveText(/Route & meals/);
+  await expect(page.getByText('Meal service', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: /Choose your seat/ }).click();
+  await expect(page.getByText(/Regional jet/)).toBeVisible();
+  await expect(page.locator('[data-seat="15F"]')).toHaveCount(1);
+  await expect(page.locator('[data-seat="16A"]')).toHaveCount(0);
+  await expect(page.locator('[data-seat="14B"]')).toHaveCount(0);
+  await expect(page.locator('[data-seat="1A"]')).toHaveCount(0);
+  await page.goBack();
+  await chooseDestination(page, 'san fr'); // 1h 50m
+  await page.getByRole('button', { name: /Choose your seat/ }).click();
+  await expect(page.locator('[data-seat="21F"]')).toHaveCount(1);
+  await expect(page.locator('[data-seat="22A"]')).toHaveCount(0);
+  await expect(page.locator('[data-seat="14B"]')).toHaveCount(1);
+  await page.goBack();
+  await chooseDestination(page, 'narita'); // over 3 h
+  await page.getByRole('button', { name: /Choose your seat/ }).click();
+  await expect(page.getByText(/Wide cabin/)).toBeVisible();
+  await page.locator('[data-seat="28C"]').click();
+  await page.getByRole('button', { name: 'Confirm seat 28C' }).click();
+  await expect(page.getByRole('article')).toContainText('28C');
+  // A shorter route does not have row 28: the pass falls back to 14A.
+  await page.goto('/book');
+  await chooseDestination(page, 'spokane');
+  await page.getByRole('button', { name: /Choose your seat/ }).click();
+  await expect(page.getByRole('button', { name: 'Confirm seat 14A' })).toBeVisible();
 });
 
 test('sign-in is a separate email and password page with no Google', async ({ page }) => {

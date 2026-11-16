@@ -54,6 +54,8 @@ Signing in moves the guest's flights into the account. Account data is saved on 
 | "Long haul (over 4h)" filter | 2–3h and Long haul (over 3h) | One definition of long haul everywhere. |
 | Flight numbers "AF###" | "AX###" | AF is Air France's code. |
 | Mobile seat map rows 10–18 | All rows 10–21 | Otherwise rows 19–21 can't be picked on a phone. |
+| One cabin for every flight | The plane follows the focus block | Under 1 h: regional jet, rows 10–15, 4 across, no first class. 1–3 h: rows 10–21. Over 3 h: rows 10–30. The exit row is on every plane. A saved seat that isn't on the new plane falls back to 14A. |
+| Four booking steps | Three: Route & meals, Seat, Boarding pass | Route and meal service are on one page, so they share a step. |
 | Four audio loop files | Synthesized | No licensing, no download, works offline. |
 | Email, Google and Apple sign-in | Email and password only | Apple and Google were removed on request. Sign-in is a separate page at `/signin`. There is no password reset yet. |
 | One cabin chime | A set of cabin cues | Door close and seatbelt sign at boarding, sign off at cruise, sign on for descent, meal chimes, a buckle click, touchdown with reverse thrust and an arrival chime, a divert alert. The engine sound also follows the flight phase. All cues follow the "Cabin chime alerts" switch. |

@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { MobileStepHeader, Screen, StepPills, TopBar } from '../components/ui/TopBar';
 import { airport } from '../data/airports';
 import { formatBlock, routeDuration } from '../engine/duration';
-import { DEFAULT_SEAT, parseSeat, SEAT_INFO, seatTypeFor } from '../engine/seats';
+import { cabinFor, resolveSeat, SEAT_INFO, seatTypeFor } from '../engine/seats';
 import type { SeatType } from '../engine/types';
 import { useIsMobile } from '../lib/hooks';
 import { useBooking } from '../store/bookingStore';
@@ -27,12 +27,13 @@ export function Seat() {
   const dest = airport(draft.destination);
   if (!origin || !dest) return <Navigate to={ROUTES.booking} replace />;
 
-  // A saved seat that is no longer valid (e.g. locked first class) falls back.
-  const valid = parseSeat(draft.seat) && (seatTypeFor(draft.seat) !== 'first' || unlocked);
-  const seat = valid ? draft.seat : DEFAULT_SEAT;
+  const dur = routeDuration(origin, dest);
+  const plan = cabinFor(dur.blockMin);
+  // A saved seat that is not on this plane (or is locked first class) falls back.
+  const seat = resolveSeat(draft.seat, plan, unlocked);
   const type = seatTypeFor(seat);
   const info = SEAT_INFO[type];
-  const dur = routeDuration(origin, dest);
+  const cards = TYPE_CARDS.filter((c) => c.type !== 'middle' || plan.letters.includes('B'));
 
   const confirm = () => {
     draft.set({ seat });
@@ -48,19 +49,19 @@ export function Seat() {
     <Screen glows={['50% -2%', '2% 72%', '98% 82%']} className={mobile ? '!pb-28' : ''}>
       <div className="hidden md:block">
         <TopBar>
-          <StepPills current={3} />
+          <StepPills current={2} />
         </TopBar>
       </div>
-      <MobileStepHeader back={ROUTES.booking} step={3} />
+      <MobileStepHeader back={ROUTES.booking} step={2} />
 
       <main className="mx-auto mt-4 max-w-[1344px] md:mt-10">
         <h1 className="text-[30px] md:text-[44px]">Choose your seat</h1>
         <p className="label mt-2">
-          {origin.iata} → {dest.iata} · {formatBlock(dur.blockMin)} · your seat sets the rules
+          {origin.iata} → {dest.iata} · {formatBlock(dur.blockMin)} · {plan.name} · your seat sets the rules
         </p>
 
         <section className="card mt-4 p-[14px] md:mt-7 md:p-7" aria-label="Cabin">
-          <CabinMap selected={seat} onSelect={(s) => draft.set({ seat: s })} firstUnlocked={unlocked} vertical={mobile} />
+          <CabinMap selected={seat} onSelect={(s) => draft.set({ seat: s })} firstUnlocked={unlocked} plan={plan} vertical={mobile} />
         </section>
 
         <div className="mt-4 grid gap-4 md:mt-7 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-7">
@@ -87,7 +88,7 @@ export function Seat() {
           </section>
 
           <div className="grid grid-cols-2 gap-3 md:gap-4">
-            {TYPE_CARDS.map((c) => (
+            {cards.map((c) => (
               <div
                 key={c.type}
                 className={`bg-surface rounded-[24px] border p-4 md:p-5 ${type === c.type ? 'border-accent' : 'border-border'}`}
