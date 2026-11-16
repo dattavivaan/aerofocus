@@ -1,12 +1,42 @@
 import type { SeatType } from './types';
 
-export const ECONOMY_ROWS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21] as const;
+export const FIRST_ECONOMY_ROW = 10;
+/** The longest plane has economy rows 10–30. */
+export const MAX_ROW = 30;
+const rowsTo = (last: number): number[] => Array.from({ length: last - FIRST_ECONOMY_ROW + 1 }, (_, i) => FIRST_ECONOMY_ROW + i);
 export const ECONOMY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
 export const FIRST_ROWS = [1, 2] as const;
 export const FIRST_LETTERS = ['A', 'C', 'D', 'F'] as const;
 export const EXIT_ROW = 12;
+/** Exists on every plane, so a stale seat can always fall back to it. */
 export const DEFAULT_SEAT = '14A';
 export const FIRST_CLASS_UNLOCK_MIN = 25 * 60;
+
+export type CabinSize = 'short' | 'medium' | 'long';
+
+export interface CabinPlan {
+  size: CabinSize;
+  /** Economy rows, nose to tail. */
+  rows: number[];
+  /** Economy letters, port to starboard. */
+  letters: readonly string[];
+  /** The plane has a first class cabin (it still has to be unlocked). */
+  hasFirst: boolean;
+  name: string;
+}
+
+const SHORT_LETTERS = ['A', 'C', 'D', 'F'] as const;
+
+/**
+ * The plane follows the focus block: under 1 h is a small regional jet
+ * (rows 10–15, 2+2, no middle seats, no first class), 1–3 h is the standard
+ * cabin (rows 10–21), and over 3 h is a larger plane (rows 10–30).
+ */
+export function cabinFor(blockMin: number): CabinPlan {
+  if (blockMin < 60) return { size: 'short', rows: rowsTo(15), letters: SHORT_LETTERS, hasFirst: false, name: 'Regional jet' };
+  if (blockMin <= 180) return { size: 'medium', rows: rowsTo(21), letters: ECONOMY_LETTERS, hasFirst: true, name: 'Standard cabin' };
+  return { size: 'long', rows: rowsTo(MAX_ROW), letters: ECONOMY_LETTERS, hasFirst: true, name: 'Wide cabin' };
+}
 
 export interface SeatRules {
   /** Cabin window panel is shown in flight. */
@@ -77,7 +107,7 @@ export function parseSeat(seat: string): { row: number; letter: string } | null 
   const row = Number(m[1]);
   const letter = m[2];
   const first = (FIRST_ROWS as readonly number[]).includes(row) && (FIRST_LETTERS as readonly string[]).includes(letter);
-  const eco = (ECONOMY_ROWS as readonly number[]).includes(row);
+  const eco = row >= FIRST_ECONOMY_ROW && row <= MAX_ROW && (ECONOMY_LETTERS as readonly string[]).includes(letter);
   return first || eco ? { row, letter } : null;
 }
 
@@ -100,17 +130,32 @@ export function isFirstClassUnlocked(totalFocusMin: number): boolean {
   return totalFocusMin >= FIRST_CLASS_UNLOCK_MIN;
 }
 
+/** Is this seat on this plane (ignores whether first class is unlocked)? */
+export function seatOnPlan(seat: string, plan: CabinPlan): boolean {
+  const p = parseSeat(seat);
+  if (!p) return false;
+  if (p.row <= 2) return plan.hasFirst;
+  return plan.rows.includes(p.row) && plan.letters.includes(p.letter);
+}
+
+/** The seat if it can be used on this plane, otherwise the default seat. */
+export function resolveSeat(seat: string, plan: CabinPlan, firstUnlocked: boolean): string {
+  if (!seatOnPlan(seat, plan)) return DEFAULT_SEAT;
+  if (seatTypeFor(seat) === 'first' && !firstUnlocked) return DEFAULT_SEAT;
+  return seat;
+}
+
 export type SeatMove = 'fore' | 'aft' | 'port' | 'starboard';
 
 /**
  * Arrow-key movement on the cabin map. fore/aft change the row, port/starboard
  * change the letter (towards A / towards F). Returns the same seat at an edge.
  */
-export function moveSeat(seat: string, move: SeatMove, firstUnlocked: boolean): string {
+export function moveSeat(seat: string, move: SeatMove, firstUnlocked: boolean, plan: CabinPlan = cabinFor(120)): string {
   const p = parseSeat(seat);
   if (!p) return DEFAULT_SEAT;
-  const rows: number[] = [...(firstUnlocked ? FIRST_ROWS : []), ...ECONOMY_ROWS];
-  const lettersFor = (row: number): readonly string[] => (row <= 2 ? FIRST_LETTERS : ECONOMY_LETTERS);
+  const rows: number[] = [...(firstUnlocked && plan.hasFirst ? FIRST_ROWS : []), ...plan.rows];
+  const lettersFor = (row: number): readonly string[] => (row <= 2 ? FIRST_LETTERS : plan.letters);
   if (move === 'fore' || move === 'aft') {
     const i = rows.indexOf(p.row) + (move === 'aft' ? 1 : -1);
     if (i < 0 || i >= rows.length) return seat;

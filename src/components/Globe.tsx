@@ -1,68 +1,50 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { geoOrthographic, geoPath, type GeoPermissibleObjects } from 'd3-geo';
 import { feature } from 'topojson-client';
 import land110 from 'world-atlas/land-110m.json';
-import { interpolate, type LatLon } from '../engine/geo';
+import { distanceMi, EARTH_RADIUS_MI, interpolate, type LatLon } from '../engine/geo';
 
-type Ring = [number, number][];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const toLand = (topo: any): GeoPermissibleObjects => feature(topo, topo.objects.land) as unknown as GeoPermissibleObjects;
 
-// Land outlines as plain rings of [lon, lat], decoded once.
-const LAND: Ring[] = (() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const topo = land110 as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const geo = feature(topo, topo.objects.land) as any;
-  const rings: Ring[] = [];
-  const geoms = geo.type === 'FeatureCollection' ? geo.features.map((f: { geometry: unknown }) => f.geometry) : [geo.geometry];
-  for (const g of geoms) {
-    const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
-    for (const poly of polys) for (const ring of poly) rings.push(ring);
-  }
-  return rings;
-})();
+const LAND_COARSE = toLand(land110);
 
-const rad = (d: number) => (d * Math.PI) / 180;
-
-/** Orthographic projection centred on `c`. Returns null on the far side. */
-function project(lon: number, lat: number, c: LatLon, r: number): [number, number] | null {
-  const l = rad(lon - c.lon);
-  const p = rad(lat);
-  const p0 = rad(c.lat);
-  const cosc = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l);
-  if (cosc < 0) return null;
-  return [r + r * Math.cos(p) * Math.sin(l), r - r * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l))];
-}
-
-function pathFor(points: [number, number][], c: LatLon, r: number, close: boolean): string {
-  let d = '';
-  let pen = false;
-  for (const [lon, lat] of points) {
-    const q = project(lon, lat, c, r);
-    if (!q) {
-      pen = false;
-      continue;
-    }
-    d += `${pen ? 'L' : 'M'}${q[0].toFixed(1)},${q[1].toFixed(1)}`;
-    pen = true;
-  }
-  return close && d ? d : d;
-}
+/** Share of the globe's width the route should fill. Short routes zoom in. */
+const ROUTE_SPAN = 0.6;
+const MAX_ZOOM = 30;
 
 /** A small globe with the route arc. Decorative; the route is in the text. */
 export function Globe({ from, to, size = 200 }: { from: LatLon; to?: LatLon; size?: number }) {
   const r = size / 2;
-  const centre = useMemo(() => (to ? interpolate(from, to, 0.5) : from), [from, to]);
-  const land = useMemo(() => LAND.map((ring) => pathFor(ring, centre, r, true)).join(''), [centre, r]);
-  const arc = useMemo(() => {
-    if (!to) return '';
-    const pts: [number, number][] = [];
-    for (let i = 0; i <= 64; i++) {
-      const p = interpolate(from, to, i / 64);
-      pts.push([p.lon, p.lat]);
-    }
-    return pathFor(pts, centre, r, false);
-  }, [from, to, centre, r]);
-  const a = project(from.lon, from.lat, centre, r);
-  const b = to && project(to.lon, to.lat, centre, r);
+  // Finer coastlines are fetched on demand, because a zoomed-in short route shows them.
+  const [fine, setFine] = useState<GeoPermissibleObjects | null>(null);
+  useEffect(() => {
+    let live = true;
+    void import('world-atlas/land-50m.json').then((m) => live && setFine(toLand(m.default)));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const { land, arc, a, b } = useMemo(() => {
+    const centre = to ? interpolate(from, to, 0.5) : from;
+    const angle = to ? distanceMi(from, to) / EARTH_RADIUS_MI : 0;
+    const zoom = to && angle > 1e-6 ? Math.min(MAX_ZOOM, Math.max(1, ROUTE_SPAN / Math.sin(Math.min(angle, Math.PI) / 2))) : 1;
+    const proj = geoOrthographic()
+      .rotate([-centre.lon, -centre.lat])
+      .translate([r, r])
+      .scale(r * zoom)
+      .clipAngle(90);
+    const path = geoPath(proj);
+    const pt = (p: LatLon) => (proj([p.lon, p.lat]) ?? null) as [number, number] | null;
+    return {
+      land: path(fine ?? LAND_COARSE) ?? '',
+      // d3 draws the great-circle arc between the two points and clips it at the horizon.
+      arc: to ? (path({ type: 'LineString', coordinates: [[from.lon, from.lat], [to.lon, to.lat]] }) ?? '') : '',
+      a: pt(from),
+      b: to ? pt(to) : null,
+    };
+  }, [from, to, r, fine]);
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" className="shrink-0">
@@ -77,7 +59,7 @@ export function Globe({ from, to, size = 200 }: { from: LatLon; to?: LatLon; siz
       </defs>
       <circle cx={r} cy={r} r={r - 1} fill="url(#globe-sea)" stroke="var(--border)" />
       <g clipPath="url(#globe-clip)">
-        <path d={land} fill="#27364a" stroke="#3a4b63" strokeWidth="0.5" fillRule="evenodd" />
+        <path d={land} fill="#27364a" stroke="#3a4b63" strokeWidth="0.5" />
         {arc && <path d={arc} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />}
       </g>
       {a && <circle cx={a[0]} cy={a[1]} r="3.5" fill="var(--accent)" />}

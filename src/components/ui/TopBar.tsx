@@ -25,13 +25,12 @@ export function TopBar({ children, className = '', compact }: { children?: React
 }
 
 const STEPS = [
-  { n: 1, label: 'Route', to: ROUTES.booking },
-  { n: 2, label: 'Meal service', to: ROUTES.booking },
-  { n: 3, label: 'Seat', to: ROUTES.seat },
-  { n: 4, label: 'Boarding pass', to: ROUTES.pass },
+  { n: 1, label: 'Route & meals', to: ROUTES.booking },
+  { n: 2, label: 'Seat', to: ROUTES.seat },
+  { n: 3, label: 'Boarding pass', to: ROUTES.pass },
 ];
 
-/** The four booking steps. `current` is 1–4. */
+/** The three booking steps. `current` is 1–3. */
 export function StepPills({ current }: { current: number }) {
   return (
     <ol className="hidden items-center gap-1 md:flex" aria-label="Booking steps">
@@ -76,7 +75,7 @@ export function MainNav() {
   );
 }
 
-/** Mobile header for booking steps: back button + "STEP n OF 4". */
+/** Mobile header for booking steps: back button + "STEP n OF 3". */
 export function MobileStepHeader({ back, step, title }: { back: string; step: number; title?: string }) {
   return (
     <div className="flex items-center justify-between md:hidden">
@@ -88,7 +87,7 @@ export function MobileStepHeader({ back, step, title }: { back: string; step: nu
         ←
       </Link>
       {title && <span className="font-display text-[17px] font-bold">{title}</span>}
-      <span className="label">Step {step} of 4</span>
+      <span className="label">Step {step} of 3</span>
     </div>
   );
 }

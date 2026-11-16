@@ -10,7 +10,7 @@ import { MobileStepHeader, Screen, StepPills, TopBar } from '../components/ui/To
 import { airport, destinationsFrom, guessHomeAirport } from '../data/airports';
 import { formatBlock, routeDuration, type FocusFilter } from '../engine/duration';
 import { defaultMeals, mealOptions, validateMeals } from '../engine/schedule';
-import { SEAT_RULES, seatTypeFor } from '../engine/seats';
+import { cabinFor, resolveSeat, SEAT_RULES, seatTypeFor } from '../engine/seats';
 import type { MealService } from '../engine/types';
 import { distance, MEAL_NAMES, PURPOSES } from '../lib/format';
 import { useIsMobile } from '../lib/hooks';
@@ -34,12 +34,14 @@ export function Booking() {
   const homeCode = useProfile((s) => s.profile.homeAirport);
   const flying = useSession((s) => isFlying(s.session));
   const [filter, setFilter] = useState<FocusFilter | null>(null);
-  // First class may place meals anywhere.
-  const rules = { free: SEAT_RULES[seatTypeFor(draft.seat)].freeMeals };
+  const unlocked = useProfile((s) => s.profile.firstClassUnlocked);
 
   const origin = airport(draft.origin) ?? airport(homeCode) ?? guessHomeAirport();
   const dest = airport(draft.destination);
   const dur = useMemo(() => (dest ? routeDuration(origin, dest) : null), [origin, dest]);
+  // First class may place meals anywhere. A seat not on this plane does not count.
+  const seat = resolveSeat(draft.seat, cabinFor(dur?.blockMin ?? 120), unlocked);
+  const rules = { free: SEAT_RULES[seatTypeFor(seat)].freeMeals };
   const suggestions = useMemo(() => (filter ? destinationsFrom(origin, filter, 6) : []), [origin, filter]);
 
   const options = useMemo(() => (dur ? mealOptions(dur.blockMin) : []), [dur]);
@@ -275,10 +277,10 @@ export function Booking() {
     <Screen glows={['88% 2%', '6% 34%', '50% 104%']} className={mobile ? '!pb-28' : ''}>
       <div className="hidden md:block">
         <TopBar>
-          <StepPills current={ready ? 2 : 1} />
+          <StepPills current={1} />
         </TopBar>
       </div>
-      <MobileStepHeader back={ROUTES.terminal} step={ready ? 2 : 1} />
+      <MobileStepHeader back={ROUTES.terminal} step={1} />
 
       <main className="mx-auto mt-4 max-w-[1344px] md:mt-10">
         <h1 className="text-[30px] md:text-[44px]">Book a flight</h1>

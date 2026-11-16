@@ -3,7 +3,7 @@ import { airport } from '../data/airports';
 import { routeDuration } from '../engine/duration';
 import { flightNoFor, gateFor, newId } from '../engine/ids';
 import { defaultMeals, mealOptions, validateMeals } from '../engine/schedule';
-import { SEAT_RULES, seatTypeFor } from '../engine/seats';
+import { cabinFor, resolveSeat, SEAT_RULES, seatTypeFor } from '../engine/seats';
 import * as timer from '../engine/timer';
 import type { Booking, Session } from '../engine/types';
 import { useBooking } from './bookingStore';
@@ -48,8 +48,11 @@ export const useSession = create<SessionState>((set, get) => ({
     const dest = airport(d.destination);
     if (!o || !dest || o.iata === dest.iata) return false;
     const dur = routeDuration(o, dest);
+    // A seat that is not on this plane (route changed) falls back to the default.
+    const seat = resolveSeat(d.seat, cabinFor(dur.blockMin), useProfile.getState().profile.firstClassUnlocked);
+    if (seat !== d.seat) d.set({ seat });
     const preset = mealOptions(dur.blockMin).find((x) => x.id === d.mealOption);
-    const free = SEAT_RULES[seatTypeFor(d.seat)].freeMeals;
+    const free = SEAT_RULES[seatTypeFor(seat)].freeMeals;
     const custom = d.mealOption === 'custom' && validateMeals(dur.blockMin, d.customMeals, { free }).length === 0;
     const meals = custom ? d.customMeals : (preset?.meals ?? defaultMeals(dur.blockMin));
     const booking: Booking = {
@@ -62,8 +65,8 @@ export const useSession = create<SessionState>((set, get) => ({
       flightNo: flightNoFor(o.iata, dest.iata),
       gate: gateFor(o.iata, dest.iata),
       purpose: d.purpose,
-      seat: d.seat,
-      seatType: seatTypeFor(d.seat),
+      seat,
+      seatType: seatTypeFor(seat),
       meals,
     };
     set({ booking, session: timer.openPass(timer.newSession(booking, now), now), passOpenedAt: now });

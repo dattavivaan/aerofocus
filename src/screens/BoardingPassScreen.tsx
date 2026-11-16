@@ -62,10 +62,10 @@ export function BoardingPassScreen() {
     <Screen glows={['18% 92%', '82% 4%', '98% 72%']} className={mobile ? '!pb-28' : ''}>
       <div className="hidden md:block">
         <TopBar>
-          <StepPills current={4} />
+          <StepPills current={3} />
         </TopBar>
       </div>
-      <MobileStepHeader back={ROUTES.seat} step={4} />
+      <MobileStepHeader back={ROUTES.seat} step={3} />
 
       <main className="mx-auto mt-4 max-w-[1040px] md:mt-10">
         <p className="label !text-accent">

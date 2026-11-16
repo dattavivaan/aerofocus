@@ -1,14 +1,13 @@
 import { useRef } from 'react';
 import { Lock } from 'lucide-react';
 import {
-  ECONOMY_LETTERS,
-  ECONOMY_ROWS,
   EXIT_ROW,
   FIRST_LETTERS,
   FIRST_ROWS,
   moveSeat,
   seatLabel,
   seatTypeFor,
+  type CabinPlan,
   type SeatMove,
 } from '../../engine/seats';
 import type { SeatType } from '../../engine/types';
@@ -17,6 +16,7 @@ interface Props {
   selected: string;
   onSelect: (seat: string) => void;
   firstUnlocked: boolean;
+  plan: CabinPlan;
   /** Mobile: nose at the top, rows run down the page. */
   vertical: boolean;
 }
@@ -29,7 +29,7 @@ const TYPE_STYLE: Record<SeatType, string> = {
   first: 'border-accent/70 text-accent',
 };
 
-export function CabinMap({ selected, onSelect, firstUnlocked, vertical }: Props) {
+export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: Props) {
   const root = useRef<HTMLDivElement>(null);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -39,7 +39,7 @@ export function CabinMap({ selected, onSelect, firstUnlocked, vertical }: Props)
     const move = map[e.key];
     if (!move) return;
     e.preventDefault();
-    const next = moveSeat(selected, move, firstUnlocked);
+    const next = moveSeat(selected, move, firstUnlocked, plan);
     if (next !== selected) {
       onSelect(next);
       requestAnimationFrame(() => root.current?.querySelector<HTMLButtonElement>(`[data-seat="${next}"]`)?.focus());
@@ -114,14 +114,18 @@ export function CabinMap({ selected, onSelect, firstUnlocked, vertical }: Props)
           vertical ? 'flex-col items-center gap-1 rounded-b-3xl border-t-0 px-2 pt-1 pb-4' : 'items-center gap-1 rounded-r-3xl border-l-0 py-4 pr-5 pl-1'
         }`}
       >
+        {plan.hasFirst && (
+          <>
+            <div className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
+              {FIRST_ROWS.map((n) => row(n, FIRST_LETTERS, !firstUnlocked))}
+            </div>
+            <span className={`label !text-[9px] ${vertical ? 'my-2' : 'mx-2 [writing-mode:vertical-rl]'}`}>
+              {firstUnlocked ? 'First class' : 'First · 25 h to unlock'}
+            </span>
+          </>
+        )}
         <div className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
-          {FIRST_ROWS.map((n) => row(n, FIRST_LETTERS, !firstUnlocked))}
-        </div>
-        <span className={`label !text-[9px] ${vertical ? 'my-2' : 'mx-2 [writing-mode:vertical-rl]'}`}>
-          {firstUnlocked ? 'First class' : 'First · 25 h to unlock'}
-        </span>
-        <div className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
-          {ECONOMY_ROWS.map((n) => row(n, ECONOMY_LETTERS, false))}
+          {plan.rows.map((n) => row(n, plan.letters, false))}
         </div>
       </div>
      </div>

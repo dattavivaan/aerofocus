@@ -4,7 +4,7 @@ import { blockMinFor, formatBlock, haulFor, matchesFilter, rawMinutes, routeDura
 import { distanceMi, headingAt, interpolate, positionAt, routeLine } from './geo';
 import { flightNoFor, gateFor } from './ids';
 import { defaultMeals, delayMeal, focusMinAt, legs, mealOptions, phaseAt, validateMeals } from './schedule';
-import { moveSeat, seatLabel, seatTypeFor, SEAT_RULES } from './seats';
+import { cabinFor, moveSeat, resolveSeat, seatLabel, seatOnPlan, seatTypeFor, SEAT_RULES } from './seats';
 import { applyOutcome, currentStreak, defaultProfile, localDay } from './stats';
 import { advance, board, canDelay, delayNextMeal, divert, elapsedMs, fastenSeatbelt, newSession, openPass, view } from './timer';
 import type { Airport, Booking, MealService, Session } from './types';
@@ -156,7 +156,8 @@ describe('seats and ids', () => {
     expect(seatTypeFor('12B')).toBe('exit');
     expect(seatTypeFor('1A')).toBe('first');
     expect(() => seatTypeFor('1B')).toThrow();
-    expect(() => seatTypeFor('22A')).toThrow();
+    expect(seatTypeFor('30F')).toBe('window');
+    expect(() => seatTypeFor('31A')).toThrow();
     expect(seatLabel('14A')).toBe('Seat 14A, window');
     expect(SEAT_RULES.exit).toMatchObject({ autoResume: true, divertHoldSec: 10, window: true });
     expect(SEAT_RULES.middle.ambientAudio).toBe(false);
@@ -168,6 +169,37 @@ describe('seats and ids', () => {
     expect(moveSeat('10B', 'fore', true)).toBe('2A');
     expect(moveSeat('2C', 'starboard', true)).toBe('2D');
     expect(moveSeat('21F', 'aft', true)).toBe('21F');
+  });
+  it('the cabin plan follows the focus block', () => {
+    const short = cabinFor(55);
+    expect(short).toMatchObject({ size: 'short', letters: ['A', 'C', 'D', 'F'], hasFirst: false });
+    expect(short.rows).toEqual([10, 11, 12, 13, 14, 15]);
+    expect(cabinFor(60).size).toBe('medium');
+    expect(cabinFor(180).rows.at(-1)).toBe(21);
+    expect(cabinFor(181)).toMatchObject({ size: 'long', hasFirst: true });
+    expect(cabinFor(181).rows.at(-1)).toBe(30);
+    expect(cabinFor(55).rows.includes(12)).toBe(true); // exit row on every plane
+  });
+  it('a seat that is not on the plane falls back to 14A', () => {
+    const [short, medium, long] = [cabinFor(45), cabinFor(120), cabinFor(400)];
+    expect(seatOnPlan('14B', short)).toBe(false);
+    expect(seatOnPlan('16A', short)).toBe(false);
+    expect(seatOnPlan('25C', medium)).toBe(false);
+    expect(seatOnPlan('25C', long)).toBe(true);
+    expect(resolveSeat('25C', medium, false)).toBe('14A');
+    expect(resolveSeat('14E', short, false)).toBe('14A');
+    expect(resolveSeat('1A', short, true)).toBe('14A'); // no first class on a regional jet
+    expect(resolveSeat('1A', medium, false)).toBe('14A'); // locked
+    expect(resolveSeat('1A', medium, true)).toBe('1A');
+    expect(resolveSeat('13C', short, false)).toBe('13C');
+  });
+  it('arrow keys stay on the plane', () => {
+    const short = cabinFor(45);
+    expect(moveSeat('15A', 'aft', true, short)).toBe('15A');
+    expect(moveSeat('10A', 'fore', true, short)).toBe('10A'); // no first class to move into
+    expect(moveSeat('14C', 'starboard', false, short)).toBe('14D');
+    expect(moveSeat('14D', 'starboard', false, short)).toBe('14F');
+    expect(moveSeat('21F', 'aft', false, cabinFor(400))).toBe('22F');
   });
   it('flight number and gate are stable per route', () => {
     expect(flightNoFor('SEA', 'SFO')).toMatch(/^AX\d{3}$/);
