@@ -70,25 +70,72 @@
       var(--bg);
   }
 
-  /* Liquid glass: floating layers only. */
-  .glass {
-    background: var(--glass-bg-fallback);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-highlight);
+  /* Liquid glass. A curved bright rim, a sheen that follows the pointer, a soft
+     inner glow and a saturated, blurred backdrop. On Chromium the small floating
+     pieces (.glass-refract) also bend what is behind them near the edge. */
+  .glass,
+  .card {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(280px circle at var(--mx, 22%) var(--my, -12%), rgba(255, 255, 255, 0.2), transparent 62%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(120, 170, 255, 0.07) 100%),
+      var(--glass-bg-fallback);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.34),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 0 34px rgba(142, 193, 255, 0.07),
+      0 14px 36px rgba(0, 4, 18, 0.38);
+  }
+  .card {
+    border-radius: 24px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 0 40px rgba(142, 193, 255, 0.05),
+      var(--shadow-card);
+  }
+  .glass::before,
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.12) 24%, rgba(255, 255, 255, 0.03) 56%, rgba(150, 200, 255, 0.5));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   }
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-    .glass {
-      background: var(--glass-bg);
-      -webkit-backdrop-filter: blur(22px) saturate(160%);
-      backdrop-filter: blur(22px) saturate(160%);
+    .glass,
+    .card {
+      background:
+        radial-gradient(280px circle at var(--mx, 22%) var(--my, -12%), rgba(255, 255, 255, 0.2), transparent 62%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(120, 170, 255, 0.07) 100%),
+        var(--glass-bg);
+      -webkit-backdrop-filter: blur(20px) saturate(175%) brightness(1.06);
+      backdrop-filter: blur(20px) saturate(175%) brightness(1.06);
+    }
+    .card {
+      --glass-bg: rgba(13, 24, 48, 0.55);
     }
   }
+  /* Chromium only (see LiquidDefs): lens-like bending at the glass edge. */
+  [data-refract] .glass-refract {
+    -webkit-backdrop-filter: url(#liquid-edge) blur(6px) saturate(185%) brightness(1.1);
+    backdrop-filter: url(#liquid-edge) blur(6px) saturate(185%) brightness(1.1);
+  }
 
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    box-shadow: var(--shadow-card);
+  /* Gel button: a lit, rounded surface that squashes and springs back. */
+  .btn-gel {
+    background: linear-gradient(180deg, #bfdcff 0%, #8ec1ff 48%, #68a4f0 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      inset 0 -3px 8px rgba(20, 60, 140, 0.35),
+      0 8px 22px rgba(80, 140, 255, 0.3);
   }
 
   /* Small airline-print labels. */
@@ -161,27 +208,16 @@
   .page-in > * {
     animation: rise-in 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
   }
-  .page-in > :nth-child(2) {
+  .page-in > :nth-child(3) {
     animation-delay: 0.05s;
   }
-  .page-in > :nth-child(3) {
+  .page-in > :nth-child(4) {
     animation-delay: 0.1s;
   }
   @keyframes rise-in {
     from {
       opacity: 0;
       transform: translateY(8px);
-    }
-  }
-
-  /* The current step eases in. */
-  .pill-in {
-    animation: pill-in 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) 0.12s backwards;
-  }
-  @keyframes pill-in {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
     }
   }
 
@@ -223,11 +259,214 @@
   }
 }
 
+@layer components {
+  /* ---------- Background scenes: one per screen ---------- */
+  .page-in {
+    isolation: isolate;
+  }
+  .scene {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .page-in > .scene {
+    animation: none;
+  }
+  /* Fine grain so the gradients read as a surface, not a blur. */
+  .scene::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.07;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .scene > * {
+    position: absolute;
+  }
+  .scene-svg {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Terminal: pre-dawn sky, drifting high cloud, flight paths. */
+  .scene-dawn {
+    background:
+      radial-gradient(120% 55% at 50% 118%, rgba(88, 190, 235, 0.55), rgba(50, 110, 220, 0.25) 45%, transparent 72%),
+      linear-gradient(180deg, #040918 0%, #0a1b46 46%, #134a9a 82%, #2b86c8 100%);
+  }
+  .cloud {
+    height: 70px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(190, 220, 255, 0.16) 30%, rgba(190, 220, 255, 0.1) 70%, transparent);
+    filter: blur(10px);
+    will-change: transform;
+    animation: drift-x linear infinite;
+  }
+  @keyframes drift-x {
+    from {
+      transform: translateX(-70vw);
+    }
+    to {
+      transform: translateX(110vw);
+    }
+  }
+
+  /* Booking: a slowly turning globe grid and a radar sweep. */
+  .scene-grid {
+    background: radial-gradient(90% 70% at 85% 20%, #11306b 0%, #08122b 55%, #050a18 100%);
+  }
+  .turn {
+    will-change: transform;
+    animation: spin 320s linear infinite;
+    transform-origin: 50% 50%;
+  }
+  .sweep {
+    width: 150vmax;
+    height: 150vmax;
+    right: -62vmax;
+    top: -62vmax;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0deg, rgba(142, 193, 255, 0.16) 38deg, transparent 39deg);
+    will-change: transform;
+    animation: spin 26s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Seat: overhead cabin lights. */
+  .scene-cabin {
+    background: linear-gradient(180deg, #0b1a3a 0%, #070f24 60%, #050a18 100%);
+  }
+  .cabin-light {
+    top: -2px;
+    height: 42vh;
+    width: 7vw;
+    min-width: 44px;
+    border-radius: 0 0 999px 999px;
+    background: linear-gradient(180deg, rgba(200, 225, 255, 0.26), rgba(120, 170, 255, 0.07) 38%, transparent 78%);
+    filter: blur(5px);
+    animation: light-breathe ease-in-out infinite alternate;
+  }
+  @keyframes light-breathe {
+    from {
+      opacity: 0.45;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Boarding pass: runway centre lights rushing toward you. */
+  .scene-runway {
+    background: radial-gradient(80% 50% at 50% 100%, rgba(70, 140, 255, 0.35), transparent 70%), linear-gradient(180deg, #050a1a 0%, #0a1a40 70%, #0f2a62 100%);
+  }
+  .runway-line {
+    stroke-dasharray: 5 22;
+    animation: runway 1.8s linear infinite;
+  }
+  @keyframes runway {
+    to {
+      stroke-dashoffset: -54;
+    }
+  }
+
+  /* Landing: first light on the horizon. */
+  .scene-arrival {
+    background: linear-gradient(180deg, #060d22 0%, #0f2a62 52%, #3a78c6 86%, #a8d4f0 100%);
+  }
+  .sunrise {
+    left: 50%;
+    bottom: -40vh;
+    width: 120vmax;
+    height: 80vmax;
+    margin-left: -60vmax;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(236, 246, 255, 0.85), rgba(150, 205, 255, 0.4) 40%, transparent 72%);
+    animation: sunrise 24s ease-out both;
+  }
+  @keyframes sunrise {
+    from {
+      transform: translateY(26vh);
+      opacity: 0.2;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* In flight: still and dark. Nothing moves while you work. */
+  .scene-sky {
+    background: radial-gradient(70% 50% at 50% 115%, rgba(40, 90, 200, 0.4), transparent 70%), linear-gradient(180deg, #03060f 0%, #08122b 100%);
+  }
+  .stars {
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.8), transparent),
+      radial-gradient(1px 1px at 28% 64%, rgba(255, 255, 255, 0.6), transparent),
+      radial-gradient(1.5px 1.5px at 44% 12%, rgba(255, 255, 255, 0.85), transparent),
+      radial-gradient(1px 1px at 61% 38%, rgba(255, 255, 255, 0.55), transparent),
+      radial-gradient(1px 1px at 77% 18%, rgba(255, 255, 255, 0.75), transparent),
+      radial-gradient(1.5px 1.5px at 90% 52%, rgba(255, 255, 255, 0.7), transparent),
+      radial-gradient(1px 1px at 8% 82%, rgba(255, 255, 255, 0.5), transparent),
+      radial-gradient(1px 1px at 55% 78%, rgba(255, 255, 255, 0.6), transparent);
+  }
+
+  /* Passport, log, sign-in: slow aurora ribbons. */
+  .scene-quiet {
+    background: linear-gradient(180deg, #060c1f 0%, #081533 100%);
+  }
+  /* The blur is on the wrapper: a filter on the clipped shape itself would be cut off by the clip. */
+  .ribbon-wrap {
+    left: -30vw;
+    width: 160vw;
+    height: 34vh;
+    filter: blur(14px);
+  }
+  .ribbon {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 5%, rgba(70, 140, 255, 0.28) 35%, rgba(90, 210, 235, 0.2) 60%, transparent 92%);
+    clip-path: polygon(0 40%, 25% 8%, 55% 30%, 80% 0, 100% 24%, 100% 70%, 74% 100%, 48% 62%, 22% 92%, 0 70%);
+    will-change: transform;
+    animation: ribbon-sway ease-in-out infinite alternate;
+  }
+  @keyframes ribbon-sway {
+    from {
+      transform: translate3d(-4vw, 0, 0) rotate(-6deg) scaleY(0.9);
+    }
+    to {
+      transform: translate3d(6vw, 4vh, 0) rotate(-2deg) scaleY(1.1);
+    }
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .card {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: var(--surface) !important;
+  }
+  .glass::before,
+  .card::before {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

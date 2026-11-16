@@ -274,7 +274,7 @@ export function Booking() {
   );
 
   return (
-    <Screen glows={['88% 2%', '6% 34%', '50% 104%']} className={mobile ? '!pb-28' : ''}>
+    <Screen scene="grid" glows={['88% 2%', '6% 34%', '50% 104%']} className={mobile ? '!pb-28' : ''}>
       <div className="hidden md:block">
         <TopBar>
           <StepPills current={1} />

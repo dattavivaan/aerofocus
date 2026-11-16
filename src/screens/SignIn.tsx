@@ -40,7 +40,7 @@ export function SignIn() {
   };
 
   return (
-    <Screen glows={['8% 6%', '92% 12%', '64% 100%']}>
+    <Screen scene="quiet" glows={['8% 6%', '92% 12%', '64% 100%']}>
       <TopBar />
       <main className="mx-auto mt-8 max-w-[440px] md:mt-14">
         <h1 className="text-[30px] md:text-[44px]">Check in</h1>

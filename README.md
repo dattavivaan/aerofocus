@@ -42,6 +42,7 @@ Signing in moves the guest's flights into the account. Account data is saved on 
 - `src/store/` — Zustand stores: `bookingStore` (the draft), `sessionStore` (the live flight), `profileStore` (totals, stamps, log).
 - `src/storage/` — one adapter interface; IndexedDB for guests, Supabase for accounts, `merge.ts` to join them.
 - `src/screens/` — Terminal, Booking, Seat, BoardingPass, InFlight, Landing, Passport, FlightLog.
+- `src/components/ui/Scene.tsx` — the animated background for each screen (the in-flight one is still). `LiquidDefs.tsx` adds the pointer-following sheen on glass and, in Chromium only, an SVG filter that bends the background at the edge of the top bar and bottom sheet. Other browsers get the same glass without the bending. Everything is turned off by `prefers-reduced-motion` and `prefers-reduced-transparency`.
 - `src/audio/mixer.ts` — loops and cabin cues are synthesized with the Web Audio API. `src/audio/voice.ts` speaks the crew announcements with the browser's built-in speech. There are no audio files.
 
 ## Where this differs from the PRD

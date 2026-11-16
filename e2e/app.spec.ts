@@ -296,6 +296,24 @@ test('the seat plan grows with the flight and the step pills match the page', as
   await expect(page.getByRole('button', { name: 'Confirm seat 14A' })).toBeVisible();
 });
 
+test('each screen has its own animated scene and glass cards', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.scene-dawn')).toHaveCount(1);
+  await expect(page.locator('.glass').first()).toBeVisible();
+  await page.getByRole('button', { name: /Guest Pass/ }).click();
+  await page.waitForURL('**/book');
+  await expect(page.locator('.scene-grid')).toHaveCount(1);
+  await chooseDestination(page, 'spokane');
+  await page.getByRole('button', { name: /Choose your seat/ }).click();
+  await expect(page.locator('.scene-cabin')).toHaveCount(1);
+  await page.getByRole('button', { name: /Confirm seat/ }).click();
+  await expect(page.locator('.scene-runway')).toHaveCount(1);
+  await page.goto('/passport');
+  await expect(page.locator('.scene-quiet')).toHaveCount(1);
+  // Nothing is drawn over the content: scenes sit behind it and ignore the pointer.
+  expect(await page.locator('.scene').evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none');
+});
+
 test('sign-in is a separate email and password page with no Google', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('button', { name: /Google/ })).toHaveCount(0);

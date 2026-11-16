@@ -124,7 +124,7 @@ export function Terminal() {
   );
 
   return (
-    <Screen glows={['8% 6%', '92% 12%', '64% 100%']} className={mobile ? '!pb-[200px]' : ''}>
+    <Screen scene="dawn" glows={['8% 6%', '92% 12%', '64% 100%']} className={mobile ? '!pb-[200px]' : ''}>
       <TopBar>
         <span className="label pr-3">
           Terminal {home.iata} · {clock(now)}
@@ -153,7 +153,7 @@ export function Terminal() {
                 key={i}
                 className="border-border h-24 rounded-[20px] border"
                 style={{
-                  background: `linear-gradient(180deg, hsl(${222 - i * 4} 45% ${16 + i * 2}%) 0%, hsl(${268 - i * 22} 38% ${30 + i * 3}%) 55%, hsl(${28 + i * 3} 80% ${48 + i * 3}%) 100%)`,
+                  background: `linear-gradient(180deg, hsl(${224 - i * 3} 55% ${12 + i * 2}%) 0%, hsl(${218 - i * 4} 60% ${26 + i * 3}%) 55%, hsl(${204 - i * 6} 68% ${44 + i * 3}%) 100%)`,
                 }}
               />
             ))}
@@ -165,7 +165,7 @@ export function Terminal() {
       </main>
 
       {mobile && (
-        <div className="glass fixed inset-x-0 bottom-0 z-20 rounded-t-[28px] p-[18px] pb-[max(18px,env(safe-area-inset-bottom))]">
+        <div className="glass glass-refract fixed inset-x-0 bottom-0 z-20 rounded-t-[28px] p-[18px] pb-[max(18px,env(safe-area-inset-bottom))]">
           <SignInCard onGuest={() => book()} />
         </div>
       )}
