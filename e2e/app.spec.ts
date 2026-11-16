@@ -187,6 +187,8 @@ test('works offline once installed: book, fly and land with no network', async (
 });
 
 test('no serious accessibility violations on any screen', async ({ page }) => {
+  // Page transitions fade content in; axe would read mid-fade colours.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const check = async (name: string) => {
     const r = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

@@ -61,7 +61,7 @@ export function Seat() {
         </p>
 
         <section className="card mt-4 p-[14px] md:mt-7 md:p-7" aria-label="Cabin">
-          <CabinMap selected={seat} onSelect={(s) => draft.set({ seat: s })} firstUnlocked={unlocked} plan={plan} vertical={mobile} />
+          <CabinMap key={plan.size} selected={seat} onSelect={(s) => draft.set({ seat: s })} firstUnlocked={unlocked} plan={plan} vertical={mobile} />
         </section>
 
         <div className="mt-4 grid gap-4 md:mt-7 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-7">

@@ -18,7 +18,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
       ref={ref}
       type="button"
       {...props}
-      className={`inline-flex min-h-11 cursor-pointer items-center whitespace-nowrap justify-center gap-2 rounded-full px-5 text-[15px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${STYLES[variant]} ${className}`}
+      className={`inline-flex min-h-11 cursor-pointer items-center whitespace-nowrap justify-center gap-2 rounded-full px-5 text-[15px] font-semibold transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100 ${STYLES[variant]} ${className}`}
     />
   );
 });
