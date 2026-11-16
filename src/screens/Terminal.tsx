@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../app/routes';
-import { signInOAuth, signOut, useAuth } from '../auth/auth';
+import { signOut, useAuth } from '../auth/auth';
 import { Button } from '../components/ui/Button';
 import { FlapText } from '../components/ui/FlapBoard';
 import { Screen, TopBar } from '../components/ui/TopBar';
@@ -15,19 +15,8 @@ import { useProfile } from '../store/profileStore';
 
 const STATUSES = ['Boarding', 'On time', 'On time', 'Gate open', 'On time', 'On time', 'On time', 'On time'];
 
-function SignInCard({ onGuest, compact }: { onGuest: () => void; compact?: boolean }) {
+function SignInCard({ onGuest }: { onGuest: () => void }) {
   const user = useAuth((s) => s.user);
-  const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [expanded, setExpanded] = useState(!compact);
-
-  const run = async (fn: () => ReturnType<typeof signInOAuth>) => {
-    setBusy(true);
-    const r = await fn();
-    setBusy(false);
-    setMsg(r.ok ? (r.note ? { text: r.note, bad: false } : null) : { text: r.error, bad: true });
-    if (r.ok && !r.note) onGuest();
-  };
 
   if (user) {
     return (
@@ -48,21 +37,12 @@ function SignInCard({ onGuest, compact }: { onGuest: () => void; compact?: boole
         Continue with a Guest Pass
       </Button>
       <p className="text-muted text-center text-[13px]">No account. Everything is saved on this device.</p>
-      {!expanded && (
-        <Button variant="ghost" aria-expanded={false} onClick={() => setExpanded(true)}>
-          Check in with Google
-        </Button>
-      )}
-      {expanded && (<>
-      <Button variant="secondary" disabled={busy} onClick={() => void run(() => signInOAuth())}>
-        Continue with Google
-      </Button>
-      </>)}
-      {msg && (
-        <p role="status" className={`text-[13px] ${msg.bad ? 'text-divert' : 'text-sky'}`}>
-          {msg.text}
-        </p>
-      )}
+      <Link
+        to={ROUTES.signin}
+        className="bg-surface text-text border-border hover:border-muted inline-flex min-h-11 items-center justify-center rounded-full border px-5 text-[15px] font-semibold transition"
+      >
+        Continue to sign in
+      </Link>
     </div>
   );
 }
@@ -186,7 +166,7 @@ export function Terminal() {
 
       {mobile && (
         <div className="glass fixed inset-x-0 bottom-0 z-20 rounded-t-[28px] p-[18px] pb-[max(18px,env(safe-area-inset-bottom))]">
-          <SignInCard onGuest={() => book()} compact />
+          <SignInCard onGuest={() => book()} />
         </div>
       )}
     </Screen>

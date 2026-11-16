@@ -81,13 +81,26 @@ export async function initAuth(): Promise<void> {
   }
 }
 
-/** Google is the only sign-in method. Redirects to Google and back. */
-export async function signInOAuth(): Promise<AuthResult> {
+/** "Check in": signs in, or creates the account if the email is new. */
+export async function signInEmail(email: string, password: string): Promise<AuthResult> {
   if (!useAuth.getState().configured) return NOT_SET_UP;
   try {
     const db = await supabase();
-    const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + import.meta.env.BASE_URL } });
-    return error ? { ok: false, error: error.message } : { ok: true, note: 'Opening the sign-in page…' };
+    const signIn = await db.auth.signInWithPassword({ email, password });
+    if (!signIn.error) {
+      await switchStorageFor(signIn.data.user);
+      return { ok: true };
+    }
+    if (!/invalid login credentials/i.test(signIn.error.message)) return { ok: false, error: signIn.error.message };
+    const signUp = await db.auth.signUp({ email, password });
+    if (signUp.error) {
+      return { ok: false, error: /already registered/i.test(signUp.error.message) ? 'Wrong password for that email.' : signUp.error.message };
+    }
+    // Supabase returns a user with no identities when the email already exists.
+    if (signUp.data.user && signUp.data.user.identities?.length === 0) return { ok: false, error: 'Wrong password for that email.' };
+    if (!signUp.data.session) return { ok: true, note: 'Check your email to confirm your account, then check in again.' };
+    await switchStorageFor(signUp.data.user);
+    return { ok: true };
   } catch {
     return { ok: false, error: 'Could not reach the sign-in service. You can still fly with a Guest Pass.' };
   }

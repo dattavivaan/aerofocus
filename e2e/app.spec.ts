@@ -263,12 +263,17 @@ test('cabin cues play at boarding, meal service, seatbelt and landing', async ({
   expect(await tones()).toBeGreaterThan(descending);
 });
 
-test('sign-in offers Google only', async ({ page }) => {
+test('sign-in is a separate email and password page with no Google', async ({ page }) => {
   await page.goto('/');
-  if (page.viewportSize()!.width < 768) await page.getByRole('button', { name: 'Check in with Google' }).click();
-  await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Apple/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Google/ })).toHaveCount(0);
   await expect(page.getByPlaceholder('Password')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Continue to sign in' }).click();
+  await page.waitForURL('**/signin');
+  await expect(page.getByPlaceholder('Email')).toBeVisible();
+  await expect(page.getByPlaceholder(/Password/)).toBeVisible();
+  await expect(page.getByText(/Google|Apple/)).toHaveCount(0);
+  await page.getByRole('link', { name: 'Back' }).click();
+  await page.waitForURL((u) => !u.pathname.endsWith('/signin'));
 });
 
 test('the crew announces each stage of the flight, and the switch silences it', async ({ page }) => {
