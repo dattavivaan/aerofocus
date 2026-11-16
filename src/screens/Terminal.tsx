@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../app/routes';
-import { signInEmail, signInOAuth, signOut, useAuth } from '../auth/auth';
+import { signInOAuth, signOut, useAuth } from '../auth/auth';
 import { Button } from '../components/ui/Button';
 import { FlapText } from '../components/ui/FlapBoard';
 import { Screen, TopBar } from '../components/ui/TopBar';
@@ -17,13 +17,11 @@ const STATUSES = ['Boarding', 'On time', 'On time', 'Gate open', 'On time', 'On 
 
 function SignInCard({ onGuest, compact }: { onGuest: () => void; compact?: boolean }) {
   const user = useAuth((s) => s.user);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(!compact);
 
-  const run = async (fn: () => ReturnType<typeof signInEmail>) => {
+  const run = async (fn: () => ReturnType<typeof signInOAuth>) => {
     setBusy(true);
     const r = await fn();
     setBusy(false);
@@ -52,32 +50,10 @@ function SignInCard({ onGuest, compact }: { onGuest: () => void; compact?: boole
       <p className="text-muted text-center text-[13px]">No account. Everything is saved on this device.</p>
       {!expanded && (
         <Button variant="ghost" aria-expanded={false} onClick={() => setExpanded(true)}>
-          Check in with an account
+          Check in with Google
         </Button>
       )}
       {expanded && (<>
-      <div className="label flex items-center gap-3 !text-[11px]" aria-hidden="true">
-        <span className="bg-border h-px flex-1" /> or check in <span className="bg-border h-px flex-1" />
-      </div>
-      <form
-        className="flex flex-col gap-2.5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void run(() => signInEmail(email, password));
-        }}
-      >
-        <label className="sr-only" htmlFor="email">
-          Email
-        </label>
-        <input id="email" className="input" type="email" autoComplete="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <label className="sr-only" htmlFor="password">
-          Password
-        </label>
-        <input id="password" className="input" type="password" autoComplete="current-password" required minLength={6} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <Button type="submit" variant="secondary" disabled={busy}>
-          Check in
-        </Button>
-      </form>
       <Button variant="secondary" disabled={busy} onClick={() => void run(() => signInOAuth())}>
         Continue with Google
       </Button>
