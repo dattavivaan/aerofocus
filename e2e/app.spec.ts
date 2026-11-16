@@ -263,11 +263,12 @@ test('cabin cues play at boarding, meal service, seatbelt and landing', async ({
   expect(await tones()).toBeGreaterThan(descending);
 });
 
-test('sign-in offers email and Google only', async ({ page }) => {
+test('sign-in offers Google only', async ({ page }) => {
   await page.goto('/');
-  if (page.viewportSize()!.width < 768) await page.getByRole('button', { name: 'Check in with an account' }).click();
+  if (page.viewportSize()!.width < 768) await page.getByRole('button', { name: 'Check in with Google' }).click();
   await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Apple/ })).toHaveCount(0);
+  await expect(page.getByPlaceholder('Password')).toHaveCount(0);
 });
 
 test('the crew announces each stage of the flight, and the switch silences it', async ({ page }) => {

@@ -32,6 +32,9 @@ jobs:
         env:
           # Pages serves the site under /<repository name>/.
           BASE_PATH: /${{ github.event.repository.name }}/
+          # Accounts stay off when these secrets are not set (guest mode only).
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       # Pages has no rewrite rules; 404.html makes deep links load the app.
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5

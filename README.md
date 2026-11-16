@@ -32,7 +32,7 @@ Without setup the app runs in guest mode and saves everything on the device. To 
 
 1. Create a Supabase project and run `supabase/schema.sql` in its SQL editor.
 2. Copy `.env.example` to `.env.local` and fill in the project URL and anon key.
-3. In Supabase → Authentication → Providers, enable Email and Google.
+3. In Supabase → Authentication → Providers, enable Google only (add the OAuth client ID and secret, and set the redirect URL to the Supabase callback shown on that page). Under Authentication → URL Configuration, add your site URL, including the GitHub Pages sub-path.
 
 Signing in moves the guest's flights into the account. Account data is saved on the device first and synced to Supabase, so flying still works offline. **This path has unit tests for the merge and sync logic but has not been run against a real Supabase project.**
 
@@ -55,7 +55,7 @@ Signing in moves the guest's flights into the account. Account data is saved on 
 | Flight numbers "AF###" | "AX###" | AF is Air France's code. |
 | Mobile seat map rows 10–18 | All rows 10–21 | Otherwise rows 19–21 can't be picked on a phone. |
 | Four audio loop files | Synthesized | No licensing, no download, works offline. |
-| Email, Google and Apple sign-in | Email and Google | Apple sign-in was removed on request. |
+| Email, Google and Apple sign-in | Google only | Apple, then email and password, were removed on request. |
 | One cabin chime | A set of cabin cues | Door close and seatbelt sign at boarding, sign off at cruise, sign on for descent, meal chimes, a buckle click, touchdown with reverse thrust and an arrival chime, a divert alert. The engine sound also follows the flight phase. All cues follow the "Cabin chime alerts" switch. |
 | Camera eases every second | One redraw per second | At cruise the plane moves a fraction of a pixel per second; continuous animation would keep the GPU busy for the whole flight. Switching to 3D still eases in. |
 | React 18 + Framer Motion | React 18 + `motion` (Framer Motion's current package name) | Same library. Split-flap cells use CSS animation. |
