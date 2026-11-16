@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../app/routes';
 import { signOut, useAuth } from '../auth/auth';
 import { Button } from '../components/ui/Button';
+import { finishedFlights, FlightList, PassportGrid, StatTiles } from '../components/Records';
 import { FlapText } from '../components/ui/FlapBoard';
 import { Screen, TopBar } from '../components/ui/TopBar';
 import { airport, departuresFrom, guessHomeAirport } from '../data/airports';
@@ -47,6 +48,45 @@ function SignInCard({ onGuest }: { onGuest: () => void }) {
   );
 }
 
+/** Signed-in only: your numbers, latest stamps and flights, with links to the full pages. */
+function HomeDashboard({ now, mobile }: { now: number; mobile: boolean }) {
+  const { profile, stamps, bookings, sessions } = useProfile();
+  const flights = useMemo(() => finishedFlights(bookings, sessions), [bookings, sessions]);
+  const link = 'text-accent inline-flex min-h-11 items-center text-[14px] font-semibold underline underline-offset-4';
+  return (
+    <section aria-labelledby="home-title" className="mx-auto mt-10 flex max-w-[1344px] flex-col gap-5 md:mt-14 md:gap-7">
+      <h2 id="home-title" className="text-[24px] md:text-[32px]">
+        Your passport
+      </h2>
+      <StatTiles profile={profile} now={now} />
+      <div className="grid gap-5 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-7">
+        <div className="card p-[18px] md:p-7">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-[20px]">Latest stamps</h3>
+            <Link to={ROUTES.passport} className={link}>
+              Passport
+            </Link>
+          </div>
+          <div className="mt-3">
+            <PassportGrid stamps={stamps} slots={4} size={mobile ? 74 : 110} single />
+          </div>
+        </div>
+        <div className="card p-[18px] md:p-7">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-[20px]">Recent flights</h3>
+            <Link to={ROUTES.log} className={link}>
+              Flight log
+            </Link>
+          </div>
+          <div className="mt-2">
+            <FlightList flights={flights} limit={3} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function Terminal() {
   const nav = useNavigate();
   const mobile = useIsMobile();
@@ -56,6 +96,7 @@ export function Terminal() {
   const rows = useMemo(() => departuresFrom(home, mobile ? 5 : 8), [home, mobile]);
   const startFrom = useBooking((s) => s.startFrom);
   const draftOrigin = useBooking((s) => s.origin);
+  const user = useAuth((s) => s.user);
 
   const book = (dest?: string) => {
     if (dest) startFrom(home.iata, dest);
@@ -163,6 +204,8 @@ export function Terminal() {
           </p>
         </div>
       </main>
+
+      {user && <HomeDashboard now={now} mobile={mobile} />}
 
       {mobile && (
         <div className="glass glass-refract fixed inset-x-0 bottom-0 z-20 rounded-t-[28px] p-[18px] pb-[max(18px,env(safe-area-inset-bottom))]">
