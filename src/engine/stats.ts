@@ -10,6 +10,7 @@ export function withDefaults(saved: Partial<Profile> | null | undefined): Profil
 export function defaultProfile(): Profile {
   return {
     units: 'mi',
+    theme: 'navy',
     totals: { focusMin: 0, miles: 0, flights: 0, diverted: 0 },
     streak: { current: 0, best: 0 },
     firstClassUnlocked: false,

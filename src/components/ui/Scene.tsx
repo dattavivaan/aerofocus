@@ -16,8 +16,8 @@ function Graticule() {
   });
   return (
     <svg className="turn absolute" style={{ right: '-18vmax', top: '-14vmax', width: '78vmax', height: '78vmax' }} viewBox={`${-R - 10} ${-R - 10} ${2 * R + 20} ${2 * R + 20}`}>
-      <g fill="none" stroke="rgba(142,193,255,0.16)" strokeWidth="1.2">
-        <circle r={R} stroke="rgba(142,193,255,0.28)" />
+      <g fill="none" stroke="rgb(var(--tint) / 0.16)" strokeWidth="1.2">
+        <circle r={R} stroke="rgb(var(--tint) / 0.28)" />
         {meridians.map((rx, i) => (
           <ellipse key={i} rx={rx} ry={R} />
         ))}
@@ -44,13 +44,13 @@ export function Scene({ name }: { name: SceneName }) {
             <span key={i} className="cloud" style={{ top: c.top, width: c.w, animationDuration: `${c.d}s`, animationDelay: `${c.delay}s` }} />
           ))}
           <svg className="scene-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
-            <g fill="none" stroke="rgba(190,220,255,0.22)" strokeWidth="1.2" strokeDasharray="2 10" strokeLinecap="round">
+            <g fill="none" stroke="rgb(var(--tint-pale) / 0.22)" strokeWidth="1.2" strokeDasharray="2 10" strokeLinecap="round">
               {PATHS.map((d) => (
                 <path key={d} d={d} />
               ))}
             </g>
             {!reduced && (
-              <g fill="#cfe6ff">
+              <g fill="rgb(var(--tint-light))">
                 <path d="M0-7 L16 0 L0 7 L4 0 Z" />
                 <animateMotion dur="54s" repeatCount="indefinite" rotate="auto" path={PATHS[0]} />
               </g>
@@ -70,7 +70,7 @@ export function Scene({ name }: { name: SceneName }) {
         ))}
       {name === 'runway' && (
         <svg className="scene-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice">
-          <g stroke="rgba(190,225,255,0.55)" strokeWidth="3" strokeLinecap="round" fill="none">
+          <g stroke="rgb(var(--tint-pale) / 0.55)" strokeWidth="3" strokeLinecap="round" fill="none">
             <line className="runway-line" x1="720" y1="360" x2="720" y2="900" />
             <line className="runway-line" style={{ animationDelay: '-0.4s' }} x1="716" y1="360" x2="420" y2="900" opacity="0.5" />
             <line className="runway-line" style={{ animationDelay: '-0.8s' }} x1="724" y1="360" x2="1020" y2="900" opacity="0.5" />

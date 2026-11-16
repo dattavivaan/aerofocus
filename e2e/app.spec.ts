@@ -362,3 +362,55 @@ test('the crew announces each stage of the flight, and the switch silences it', 
   await page.clock.runFor(7000);
   expect((await said()).length).toBe(before);
 });
+
+/** A profile with 50+ focus hours, written to the guest store before the app loads. */
+async function seedFirstClass(page: Page) {
+  await page.goto('/');
+  await page.evaluate(
+    () =>
+      new Promise<void>((res) => {
+        const r = indexedDB.open('keyval-store');
+        r.onupgradeneeded = () => r.result.createObjectStore('keyval');
+        r.onsuccess = () => {
+          const tx = r.result.transaction('keyval', 'readwrite');
+          tx.objectStore('keyval').put(
+            {
+              units: 'mi',
+              theme: 'navy',
+              totals: { focusMin: 3100, miles: 0, flights: 0, diverted: 0 },
+              streak: { current: 0, best: 0 },
+              firstClassUnlocked: true,
+              firstClassNoticeShown: true,
+              classNoticesShown: ['premium', 'business'],
+              audio: {},
+            },
+            'af:profile',
+          );
+          tx.oncomplete = () => res();
+        };
+      }),
+  );
+  await page.reload();
+}
+
+test('first class unlocks a gold look that is chosen on the Passport and stays accessible', async ({ page }) => {
+  await seedFirstClass(page);
+  await page.getByRole('button', { name: /Guest Pass/ }).click();
+  await page.waitForURL('**/book');
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'gold');
+  await page.goto('/passport');
+  await page.getByText('First class gold', { exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'gold');
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'gold'); // remembered
+  await page.getByText('Navy', { exact: true }).click();
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'gold');
+});
+
+test('the gold look is not offered before first class', async ({ page }) => {
+  await start(page);
+  await page.goto('/passport');
+  await expect(page.getByText('First class gold')).toHaveCount(0);
+});

@@ -79,12 +79,12 @@
     isolation: isolate;
     background:
       radial-gradient(280px circle at var(--mx, 22%) var(--my, -12%), rgba(255, 255, 255, 0.2), transparent 62%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(120, 170, 255, 0.07) 100%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.03) 40%, rgb(var(--tint-2) / 0.07) 100%),
       var(--glass-bg-fallback);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.34),
       inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-      inset 0 0 34px rgba(142, 193, 255, 0.07),
+      inset 0 0 34px rgb(var(--tint) / 0.07),
       0 14px 36px rgba(0, 4, 18, 0.38);
   }
   .card {
@@ -92,7 +92,7 @@
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.3),
       inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-      inset 0 0 40px rgba(142, 193, 255, 0.05),
+      inset 0 0 40px rgb(var(--tint) / 0.05),
       var(--shadow-card);
   }
   .glass::before,
@@ -104,7 +104,7 @@
     border-radius: inherit;
     padding: 1px;
     pointer-events: none;
-    background: linear-gradient(150deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.12) 24%, rgba(255, 255, 255, 0.03) 56%, rgba(150, 200, 255, 0.5));
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.12) 24%, rgba(255, 255, 255, 0.03) 56%, rgb(var(--tint-3) / 0.5));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
@@ -114,7 +114,7 @@
     .card {
       background:
         radial-gradient(280px circle at var(--mx, 22%) var(--my, -12%), rgba(255, 255, 255, 0.2), transparent 62%),
-        linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(120, 170, 255, 0.07) 100%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.03) 40%, rgb(var(--tint-2) / 0.07) 100%),
         var(--glass-bg);
       -webkit-backdrop-filter: blur(20px) saturate(175%) brightness(1.06);
       backdrop-filter: blur(20px) saturate(175%) brightness(1.06);
@@ -238,14 +238,14 @@
   @keyframes seat-pop {
     0% {
       transform: scale(0.92);
-      box-shadow: 0 0 0 0 rgba(142, 193, 255, 0.55);
+      box-shadow: 0 0 0 0 rgb(var(--tint) / 0.55);
     }
     60% {
       transform: scale(1.06);
     }
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 12px rgba(142, 193, 255, 0);
+      box-shadow: 0 0 0 12px rgb(var(--tint) / 0);
     }
   }
 
@@ -295,13 +295,13 @@
   /* Terminal: pre-dawn sky, drifting high cloud, flight paths. */
   .scene-dawn {
     background:
-      radial-gradient(120% 55% at 50% 118%, rgba(88, 190, 235, 0.55), rgba(50, 110, 220, 0.25) 45%, transparent 72%),
+      radial-gradient(120% 55% at 50% 118%, rgb(var(--tint-glow2) / 0.55), rgb(var(--tint-glow) / 0.25) 45%, transparent 72%),
       linear-gradient(180deg, #040918 0%, #0a1b46 46%, #134a9a 82%, #2b86c8 100%);
   }
   .cloud {
     height: 70px;
     border-radius: 999px;
-    background: linear-gradient(90deg, transparent, rgba(190, 220, 255, 0.16) 30%, rgba(190, 220, 255, 0.1) 70%, transparent);
+    background: linear-gradient(90deg, transparent, rgb(var(--tint-pale) / 0.16) 30%, rgb(var(--tint-pale) / 0.1) 70%, transparent);
     filter: blur(10px);
     will-change: transform;
     animation: drift-x linear infinite;
@@ -330,7 +330,7 @@
     right: -62vmax;
     top: -62vmax;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent 0deg, rgba(142, 193, 255, 0.16) 38deg, transparent 39deg);
+    background: conic-gradient(from 0deg, transparent 0deg, rgb(var(--tint) / 0.16) 38deg, transparent 39deg);
     will-change: transform;
     animation: spin 26s linear infinite;
   }
@@ -350,7 +350,7 @@
     width: 7vw;
     min-width: 44px;
     border-radius: 0 0 999px 999px;
-    background: linear-gradient(180deg, rgba(200, 225, 255, 0.26), rgba(120, 170, 255, 0.07) 38%, transparent 78%);
+    background: linear-gradient(180deg, rgb(var(--tint-pale) / 0.26), rgb(var(--tint-2) / 0.07) 38%, transparent 78%);
     filter: blur(5px);
     animation: light-breathe ease-in-out infinite alternate;
   }
@@ -365,7 +365,7 @@
 
   /* Boarding pass: runway centre lights rushing toward you. */
   .scene-runway {
-    background: radial-gradient(80% 50% at 50% 100%, rgba(70, 140, 255, 0.35), transparent 70%), linear-gradient(180deg, #050a1a 0%, #0a1a40 70%, #0f2a62 100%);
+    background: radial-gradient(80% 50% at 50% 100%, rgb(var(--tint-glow) / 0.35), transparent 70%), linear-gradient(180deg, #050a1a 0%, #0a1a40 70%, #0f2a62 100%);
   }
   .runway-line {
     stroke-dasharray: 5 22;
@@ -388,7 +388,7 @@
     height: 80vmax;
     margin-left: -60vmax;
     border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(236, 246, 255, 0.85), rgba(150, 205, 255, 0.4) 40%, transparent 72%);
+    background: radial-gradient(closest-side, rgb(var(--tint-light) / 0.85), rgb(var(--tint-3) / 0.4) 40%, transparent 72%);
     animation: sunrise 24s ease-out both;
   }
   @keyframes sunrise {
@@ -404,7 +404,7 @@
 
   /* In flight: still and dark. Nothing moves while you work. */
   .scene-sky {
-    background: radial-gradient(70% 50% at 50% 115%, rgba(40, 90, 200, 0.4), transparent 70%), linear-gradient(180deg, #03060f 0%, #08122b 100%);
+    background: radial-gradient(70% 50% at 50% 115%, rgb(var(--tint-glow) / 0.4), transparent 70%), linear-gradient(180deg, #03060f 0%, #08122b 100%);
   }
   .stars {
     inset: 0;
@@ -433,7 +433,7 @@
   .ribbon {
     position: absolute;
     inset: 0;
-    background: linear-gradient(100deg, transparent 5%, rgba(70, 140, 255, 0.28) 35%, rgba(90, 210, 235, 0.2) 60%, transparent 92%);
+    background: linear-gradient(100deg, transparent 5%, rgb(var(--tint-glow) / 0.28) 35%, rgb(var(--tint-glow2) / 0.2) 60%, transparent 92%);
     clip-path: polygon(0 40%, 25% 8%, 55% 30%, 80% 0, 100% 24%, 100% 70%, 74% 100%, 48% 62%, 22% 92%, 0 70%);
     will-change: transform;
     animation: ribbon-sway ease-in-out infinite alternate;
@@ -479,4 +479,38 @@
 .map-mobile .maplibregl-ctrl-bottom-right,
 .map-mobile .maplibregl-ctrl-bottom-left {
   bottom: 104px;
+}
+
+/* Gold theme: the hand-painted scene gradients and the gel button. */
+:root[data-theme='gold'] {
+  .btn-gel {
+    background: linear-gradient(180deg, #ffe7a3 0%, #f2c14e 48%, #d99a22 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      inset 0 -3px 8px rgba(120, 70, 0, 0.35),
+      0 8px 22px rgba(230, 160, 40, 0.3);
+  }
+  .scene-dawn {
+    background:
+      radial-gradient(120% 55% at 50% 118%, rgb(var(--tint-glow2) / 0.55), rgb(var(--tint-glow) / 0.25) 45%, transparent 72%),
+      linear-gradient(180deg, #0a0602 0%, #261808 46%, #7a4a0e 82%, #d9972a 100%);
+  }
+  .scene-grid {
+    background: radial-gradient(90% 70% at 85% 20%, #3f2a0a 0%, #1a1006 55%, #0d0904 100%);
+  }
+  .scene-cabin {
+    background: linear-gradient(180deg, #2a1c08 0%, #170f05 60%, #0d0904 100%);
+  }
+  .scene-runway {
+    background: radial-gradient(80% 50% at 50% 100%, rgb(var(--tint-glow) / 0.35), transparent 70%), linear-gradient(180deg, #0d0904 0%, #2a1a07 70%, #4d3010 100%);
+  }
+  .scene-arrival {
+    background: linear-gradient(180deg, #120b04 0%, #3a240a 52%, #b8801f 86%, #ffe3a0 100%);
+  }
+  .scene-sky {
+    background: radial-gradient(70% 50% at 50% 115%, rgb(var(--tint-glow) / 0.4), transparent 70%), linear-gradient(180deg, #080502 0%, #1a1006 100%);
+  }
+  .scene-quiet {
+    background: linear-gradient(180deg, #120c05 0%, #1f1409 100%);
+  }
 }

@@ -13,6 +13,10 @@ setWorkerUrl(workerUrl);
 
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 
+/** A theme colour (maplibre cannot read CSS variables itself). */
+const themeColor = (name: string, fallback: string) =>
+  (typeof document !== 'undefined' && getComputedStyle(document.documentElement).getPropertyValue(name).trim()) || fallback;
+
 export type MapMode = '3d' | '2d';
 
 interface Props {
@@ -172,13 +176,13 @@ export default function FlightMap(props: Props) {
         style={{ position: 'absolute', inset: 0 }}
       >
         <Source id="rest" type="geojson" data={rest}>
-          <Layer id="rest" type="line" paint={{ 'line-color': '#6FD6E8', 'line-width': 2.5, 'line-dasharray': [2, 2] }} layout={{ 'line-cap': 'round' }} />
+          <Layer id="rest" type="line" paint={{ 'line-color': themeColor('--sky', '#6FD6E8'), 'line-width': 2.5, 'line-dasharray': [2, 2] }} layout={{ 'line-cap': 'round' }} />
         </Source>
         <Source id="flown" type="geojson" data={flown}>
-          <Layer id="flown" type="line" paint={{ 'line-color': '#8EC1FF', 'line-width': 4 }} layout={{ 'line-cap': 'round' }} />
+          <Layer id="flown" type="line" paint={{ 'line-color': themeColor('--accent', '#8EC1FF'), 'line-width': 4 }} layout={{ 'line-cap': 'round' }} />
         </Source>
         <Marker longitude={pos.lon} latitude={pos.lat} rotation={heading} rotationAlignment="map" pitchAlignment="map">
-          <span className="text-accent block drop-shadow-[0_0_10px_rgba(142,193,255,0.8)]">
+          <span className="text-accent block drop-shadow-[0_0_10px_rgb(var(--tint)/0.8)]">
             <PlaneIcon size={38} />
           </span>
         </Marker>

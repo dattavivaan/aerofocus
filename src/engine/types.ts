@@ -71,6 +71,8 @@ export type AudioChannel = 'cabin' | 'rain' | 'lofi' | 'chime' | 'voice';
 export interface Profile {
   homeAirport?: Iata;
   units: 'mi' | 'km';
+  /** The gold look is only used once first class is unlocked. */
+  theme: 'navy' | 'gold';
   totals: { focusMin: number; miles: number; flights: number; diverted: number };
   streak: { current: number; best: number; lastDay?: string }; // lastDay = local 'YYYY-MM-DD'
   firstClassUnlocked: boolean;

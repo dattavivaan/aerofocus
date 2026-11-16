@@ -11,7 +11,7 @@
   --accent: #8ec1ff;
   --on-accent: #06142e;
   --sky: #6fd6e8;
-  /* Gold is kept for first class only. */
+  /* Gold marks first class (and the optional gold theme). */
   --gold: #f2b33d;
   --divert: #f4b3a6;
   --divert-bg: rgba(240, 164, 150, 0.12);
@@ -19,6 +19,15 @@
   --paper-stub: #e5edf9;
   --ink: #0b1630;
   --ink-label: #475673;
+
+  /* The blue tint used by glass, glows and scenes, as r g b so it takes an alpha. */
+  --tint: 142 193 255;
+  --tint-2: 120 170 255;
+  --tint-3: 150 200 255;
+  --tint-pale: 190 220 255;
+  --tint-light: 207 230 255;
+  --tint-glow: 70 140 255;
+  --tint-glow2: 90 210 235;
 
   --glow-a: rgba(66, 133, 255, 0.34);
   --glow-b: rgba(52, 84, 214, 0.42);
@@ -36,4 +45,40 @@
   --glow-1: 12% 8%;
   --glow-2: 88% 18%;
   --glow-3: 60% 96%;
+}
+
+/* The gold theme: first class and the private jet, switched on from the Passport.
+   Text stays cream so contrast holds; gold is used for accents, glass, glows and scenes. */
+:root[data-theme='gold'] {
+  --bg: #0d0904;
+  --surface: #1d1509;
+  --surface-sunk: #140e06;
+  --flap: rgba(14, 9, 3, 0.84);
+  --border: #4d3b19;
+  --text: #fff8e8;
+  --text-muted: #e0cfa6;
+  --accent: #f2c14e;
+  --on-accent: #2b1b00;
+  --sky: #ffd98a;
+  --gold: #ffd36b;
+  --divert: #f4b3a6;
+  --paper: #fff8ea;
+  --paper-stub: #f6e8c8;
+  --ink: #2a1c08;
+  --ink-label: #6b5326;
+
+  --tint: 242 193 78;
+  --tint-2: 230 170 70;
+  --tint-3: 255 215 120;
+  --tint-pale: 255 232 170;
+  --tint-light: 255 240 200;
+  --tint-glow: 242 170 50;
+  --tint-glow2: 255 210 110;
+
+  --glow-a: rgba(214, 150, 40, 0.34);
+  --glow-b: rgba(160, 100, 20, 0.42);
+  --glow-c: rgba(255, 210, 110, 0.2);
+
+  --glass-bg: rgba(29, 21, 9, 0.42);
+  --glass-bg-fallback: rgba(29, 21, 9, 0.88);
 }

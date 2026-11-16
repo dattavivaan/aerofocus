@@ -6,7 +6,7 @@ const PERKS: Record<CabinClass, string> = {
   premium: 'a window, one meal delay per leg and +10% bonus miles.',
   business: 'a window, one meal delay per leg, +25% bonus miles and a silver passport stamp.',
   first:
-    'place meal services anywhere in the flight, +50% bonus miles and a gold passport stamp. You can also now charter the private jet on the seat screen: breaks of any length from 1 to 60 minutes, placed to the minute, and double miles.',
+    'place meal services anywhere in the flight, +50% bonus miles and a gold passport stamp. You can also now charter the private jet on the seat screen: breaks of any length from 1 to 60 minutes, placed to the minute, and double miles. Switch on the first class gold look from the Passport page.',
 };
 
 /** One-time message when a cabin class unlocks (10, 25 and 50 focus hours). */

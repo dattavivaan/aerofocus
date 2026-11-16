@@ -69,6 +69,27 @@ export function Passport() {
               <h2 id="set-h" className="text-[22px]">
                 Settings
               </h2>
+              {access.first && (
+                <fieldset>
+                  <legend className="label mb-2">Appearance</legend>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      ['navy', 'Navy'],
+                      ['gold', 'First class gold'],
+                    ] as const).map(([id, name]) => (
+                      <label
+                        key={id}
+                        className={`flex min-h-11 cursor-pointer items-center justify-center rounded-full border text-[14px] font-semibold has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-[var(--accent)] ${
+                          profile.theme === id ? 'bg-accent border-accent text-on-accent' : 'border-border text-muted'
+                        }`}
+                      >
+                        <input type="radio" name="theme" className="sr-only" checked={profile.theme === id} onChange={() => updateProfile({ theme: id })} />
+                        {name}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
               <AirportField
                 label="Home airport"
                 value={profile.homeAirport ?? guessHomeAirport().iata}

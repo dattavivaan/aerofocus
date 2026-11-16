@@ -72,7 +72,7 @@ export function CabinMap({ selected, onSelect, access, plan, vertical }: Props) 
         onClick={() => onSelect(code)}
         className={`flex size-11 shrink-0 cursor-pointer lg:size-[52px] lg:text-[12px] items-center justify-center rounded-[12px_12px_8px_8px] border font-mono text-[11px] font-semibold transition enabled:hover:scale-105 enabled:active:scale-95 disabled:cursor-not-allowed ${
           on
-            ? 'seat-pop bg-accent border-accent text-on-accent shadow-[0_0_18px_rgba(142,193,255,0.45)]'
+            ? 'seat-pop bg-accent border-accent text-on-accent shadow-[0_0_18px_rgb(var(--tint)/0.45)]'
             : locked
               ? 'border-border text-muted/50 bg-surface-sunk'
               : `bg-surface-sunk hover:bg-surface ${TYPE_STYLE[type]}`

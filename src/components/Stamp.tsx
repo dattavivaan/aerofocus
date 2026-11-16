@@ -24,9 +24,9 @@ const footerOf = (s: StampInfo) =>
         ? '◆ BUSINESS ◆'
         : `AEROFOCUS${s.flightNo ? ` · ${s.flightNo}` : ''}`;
 
-/** A round passport stamp. */
+/** A round passport stamp. Plain stamps follow the theme colour. */
 export function StampMark({ stamp, size = 180 }: { stamp: StampInfo; size?: number }) {
-  const c = colorOf(stamp);
+  const c = stamp.stampClass ? colorOf(stamp) : 'var(--accent)';
   const id = `arc-${stamp.iata}-${size}`;
   return (
     <svg width={size} height={size} viewBox="0 0 200 200" role="img" aria-label={`Passport stamp: ${stamp.city}, ${shortDate(stamp.date)}`}>
