@@ -44,7 +44,7 @@ export function Landing() {
     city: to.city,
     date: s.endedAt ?? now,
     flightNo: b.flightNo,
-    gold: SEAT_RULES[b.seatType].goldStamp,
+    stampClass: SEAT_RULES[b.seatType].stampClass,
   };
 
   const bookNext = () => {
@@ -85,7 +85,7 @@ export function Landing() {
       </div>
       <div>
         <dt className="label !text-[11px]">{landed ? 'Miles' : 'Miles credited'}</dt>
-        <dd className="font-mono text-[22px] font-bold">{landed ? distance(b.distanceMi, profile.units) : '0'}</dd>
+        <dd className="font-mono text-[22px] font-bold">{landed ? distance(Math.round(b.distanceMi * SEAT_RULES[b.seatType].mileMultiplier), profile.units) : '0'}</dd>
       </div>
       <div>
         <dt className="label !text-[11px]">Seat</dt>

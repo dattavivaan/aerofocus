@@ -8,9 +8,15 @@ export const DELAY_MIN = 10;
 export type Phase = 'taxiing' | 'climbing' | 'cruising' | 'meal' | 'descending';
 
 export interface PlacementRules {
-  /** First class: meals may go anywhere, with 5 min legs. */
+  /** First class and the jet: meals may go anywhere, with 5 min legs. */
   free?: boolean;
+  /** Private jet: breaks are placed to the minute and can be 1–60 min long. */
+  flex?: boolean;
 }
+
+/** The step (min) breaks snap to when dragged or moved with the keys. */
+export const stepFor = (rules?: PlacementRules): number => (rules?.flex ? 1 : 5);
+export const MAX_FLEX_BREAK_MIN = 60;
 
 const round5 = (n: number) => 5 * Math.round(n / 5);
 
@@ -25,13 +31,15 @@ export function mealTotalMin(meals: MealService[]): number {
 /** Why a meal plan is not allowed, or [] when it is fine. */
 export function validateMeals(blockMin: number, meals: MealService[], rules: PlacementRules = {}): string[] {
   const errors: string[] = [];
-  const edge = rules.free ? 5 : CRUISE_BUFFER_MIN;
-  const minLeg = rules.free ? 5 : MIN_LEG_MIN;
+  const loose = rules.free || rules.flex;
+  const edge = loose ? 5 : CRUISE_BUFFER_MIN;
+  const minLeg = loose ? 5 : MIN_LEG_MIN;
   const sorted = sortMeals(meals);
   let prevEnd = 0;
   sorted.forEach((m, i) => {
     const end = m.startMin + m.lengthMin;
     if (m.lengthMin <= 0) errors.push(`Meal ${i + 1} has no length`);
+    if (rules.flex && m.lengthMin > MAX_FLEX_BREAK_MIN) errors.push(`Meal ${i + 1} is over ${MAX_FLEX_BREAK_MIN} min`);
     if (m.startMin < edge || end > blockMin - edge)
       errors.push(`Meal ${i + 1} must sit inside cruising`);
     if (m.startMin - prevEnd < minLeg) errors.push(`Work leg before meal ${i + 1} is under ${minLeg} min`);
@@ -154,10 +162,10 @@ export function focusMinAt(meals: MealService[], elapsedMin: number): number {
  * shorter and the total is unchanged. Returns null when that would break the
  * placement rules or the meal was already delayed.
  */
-export function delayMeal(blockMin: number, meals: MealService[], index: number): MealService[] | null {
+export function delayMeal(blockMin: number, meals: MealService[], index: number, rules: PlacementRules = {}): MealService[] | null {
   const sorted = sortMeals(meals);
   const m = sorted[index];
   if (!m || m.delayed) return null;
   const next = sorted.map((x, i) => (i === index ? { ...x, startMin: x.startMin + DELAY_MIN, delayed: true } : x));
-  return validateMeals(blockMin, next).length === 0 ? next : null;
+  return validateMeals(blockMin, next, rules).length === 0 ? next : null;
 }

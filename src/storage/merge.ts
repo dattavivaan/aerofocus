@@ -26,7 +26,7 @@ export function mergeData(primary: AppData, secondary: AppData): AppData {
 export function rebuild(settings: Profile, bookings: Booking[], sessions: Session[]): AppData {
   const byId = new Map(bookings.map((b) => [b.id, b]));
   let ledger = {
-    profile: { ...settings, totals: defaultProfile().totals, streak: defaultProfile().streak, firstClassUnlocked: false },
+    profile: { ...settings, totals: defaultProfile().totals, streak: defaultProfile().streak, firstClassUnlocked: settings.firstClassUnlocked },
     stamps: [] as AppData['stamps'],
   };
   const finished = sessions

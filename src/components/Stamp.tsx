@@ -5,16 +5,28 @@ export interface StampInfo {
   city: string;
   date: number;
   flightNo?: string;
-  gold?: boolean;
+  /** Set by the class flown: business is silver, first and the jet are gold. */
+  stampClass?: 'business' | 'first' | 'jet' | null;
   visits?: number;
 }
 
 const INK = '#8EC1FF';
 const GOLD = '#FFD978';
+const SILVER = '#D5DEEC';
+
+const colorOf = (s: StampInfo) => (s.stampClass === 'business' ? SILVER : s.stampClass ? GOLD : INK);
+const footerOf = (s: StampInfo) =>
+  s.stampClass === 'jet'
+    ? '★ PRIVATE JET ★'
+    : s.stampClass === 'first'
+      ? '★ FIRST CLASS ★'
+      : s.stampClass === 'business'
+        ? '◆ BUSINESS ◆'
+        : `AEROFOCUS${s.flightNo ? ` · ${s.flightNo}` : ''}`;
 
 /** A round passport stamp. */
 export function StampMark({ stamp, size = 180 }: { stamp: StampInfo; size?: number }) {
-  const c = stamp.gold ? GOLD : INK;
+  const c = colorOf(stamp);
   const id = `arc-${stamp.iata}-${size}`;
   return (
     <svg width={size} height={size} viewBox="0 0 200 200" role="img" aria-label={`Passport stamp: ${stamp.city}, ${shortDate(stamp.date)}`}>
@@ -37,7 +49,7 @@ export function StampMark({ stamp, size = 180 }: { stamp: StampInfo; size?: numb
           {shortDate(stamp.date).toUpperCase()}
         </text>
         <text x="100" y="176" textAnchor="middle" fill={c} stroke="none" fontFamily="'JetBrains Mono Variable', monospace" fontSize="10" letterSpacing="2.5">
-          {stamp.gold ? '★ FIRST CLASS ★' : `AEROFOCUS${stamp.flightNo ? ` · ${stamp.flightNo}` : ''}`}
+          {footerOf(stamp)}
         </text>
       </g>
     </svg>
@@ -51,7 +63,7 @@ export async function stampPng(stamp: StampInfo): Promise<Blob> {
   canvas.width = S;
   canvas.height = S;
   const g = canvas.getContext('2d')!;
-  const c = stamp.gold ? GOLD : INK;
+  const c = colorOf(stamp);
   g.fillStyle = '#060B17';
   g.fillRect(0, 0, S, S);
   const glow = g.createRadialGradient(S * 0.3, S * 0.2, 0, S * 0.3, S * 0.2, S * 0.8);
@@ -98,7 +110,7 @@ export async function stampPng(stamp: StampInfo): Promise<Blob> {
   g.font = `500 38px ${mono}`;
   g.fillText(shortDate(stamp.date).toUpperCase(), 0, 110);
   g.font = `600 36px ${mono}`;
-  g.fillText(stamp.gold ? '★ FIRST CLASS ★' : `AEROFOCUS${stamp.flightNo ? ` · ${stamp.flightNo}` : ''}`, 0, 280);
+  g.fillText(footerOf(stamp), 0, 280);
   g.restore();
 
   g.fillStyle = '#B7C5DF';
