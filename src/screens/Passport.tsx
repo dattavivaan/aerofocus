@@ -5,7 +5,7 @@ import { PassportGrid, StatTiles } from '../components/Records';
 import { Button } from '../components/ui/Button';
 import { MainNav, Screen, TopBar } from '../components/ui/TopBar';
 import { guessHomeAirport } from '../data/airports';
-import { FIRST_CLASS_UNLOCK_MIN } from '../engine/seats';
+import { accessFor, CABIN_CLASSES, CABIN_NAMES, UNLOCK_MIN } from '../engine/seats';
 import { useIsMobile, useNow } from '../lib/hooks';
 import { useProfile } from '../store/profileStore';
 
@@ -14,8 +14,10 @@ export function Passport() {
   const now = useNow(60_000);
   const { profile, stamps, updateProfile } = useProfile();
   const user = useAuth((s) => s.user);
-  const toGo = Math.max(0, FIRST_CLASS_UNLOCK_MIN - profile.totals.focusMin);
-  const pct = Math.min(100, (profile.totals.focusMin / FIRST_CLASS_UNLOCK_MIN) * 100);
+  const access = accessFor(profile.totals.focusMin, profile.firstClassUnlocked);
+  const nextClass = CABIN_CLASSES.find((c) => !access[c]);
+  const toGo = nextClass ? Math.max(0, UNLOCK_MIN[nextClass] - profile.totals.focusMin) : 0;
+  const pct = nextClass ? Math.min(100, (profile.totals.focusMin / UNLOCK_MIN[nextClass]) * 100) : 100;
   const slots = Math.max(mobile ? 8 : 12, Math.ceil((stamps.length + 1) / 4) * 4);
 
   return (
@@ -37,14 +39,28 @@ export function Passport() {
           <div className="flex min-w-0 flex-col gap-5 md:gap-7">
             <section className="card p-[18px] md:p-7" aria-labelledby="fc-h">
               <h2 id="fc-h" className="text-[22px]">
-                First class
+                Cabin classes
               </h2>
-              <p className="text-muted mt-1 text-[14px]">
-                {profile.firstClassUnlocked
-                  ? 'Unlocked. Rows 1 and 2 are open on the seat map.'
-                  : `${(toGo / 60).toFixed(1)} focus hours to go. Diverted minutes count too.`}
+              <ul className="mt-3 flex flex-col gap-1.5 text-[14px]">
+                {CABIN_CLASSES.map((c) => (
+                  <li key={c} className="flex items-center justify-between gap-3">
+                    <span className={access[c] ? 'text-text' : 'text-muted'}>{CABIN_NAMES[c]}</span>
+                    <span className={`font-mono text-[12px] ${access[c] ? 'text-accent' : 'text-muted'}`}>
+                      {access[c] ? 'Unlocked' : `${UNLOCK_MIN[c] / 60} h`}
+                    </span>
+                  </li>
+                ))}
+                <li className="flex items-center justify-between gap-3">
+                  <span className={access.first ? 'text-text' : 'text-muted'}>Private jet</span>
+                  <span className={`font-mono text-[12px] ${access.first ? 'text-gold' : 'text-muted'}`}>{access.first ? 'Unlocked' : 'With first class'}</span>
+                </li>
+              </ul>
+              <p className="text-muted mt-3 text-[14px]">
+                {nextClass
+                  ? `${(toGo / 60).toFixed(1)} focus hours to ${CABIN_NAMES[nextClass]}. Diverted minutes count too.`
+                  : 'Every cabin and the private jet are open.'}
               </p>
-              <div className="bg-surface-sunk border-border mt-4 h-3 overflow-hidden rounded-full border" role="progressbar" aria-valuemin={0} aria-valuemax={25} aria-valuenow={Math.min(25, Math.round(profile.totals.focusMin / 60))} aria-label="Focus hours towards first class">
+              <div className="bg-surface-sunk border-border mt-4 h-3 overflow-hidden rounded-full border" role="progressbar" aria-valuemin={0} aria-valuemax={nextClass ? UNLOCK_MIN[nextClass] / 60 : 50} aria-valuenow={nextClass ? Math.min(UNLOCK_MIN[nextClass] / 60, Math.round(profile.totals.focusMin / 60)) : 50} aria-label={`Focus hours towards ${nextClass ? CABIN_NAMES[nextClass] : 'the top cabin'}`}>
                 <div className="bg-accent h-full rounded-full" style={{ width: `${pct}%` }} />
               </div>
             </section>

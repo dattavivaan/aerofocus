@@ -1,12 +1,16 @@
 import { useRef } from 'react';
 import { Lock } from 'lucide-react';
 import {
+  CABIN_NAMES,
+  CABIN_ROWS,
   EXIT_ROW,
-  FIRST_LETTERS,
-  FIRST_ROWS,
+  FRONT_LETTERS,
   moveSeat,
   seatLabel,
   seatTypeFor,
+  UNLOCK_MIN,
+  type Access,
+  type CabinClass,
   type CabinPlan,
   type SeatMove,
 } from '../../engine/seats';
@@ -15,7 +19,7 @@ import type { SeatType } from '../../engine/types';
 interface Props {
   selected: string;
   onSelect: (seat: string) => void;
-  firstUnlocked: boolean;
+  access: Access;
   plan: CabinPlan;
   /** Mobile: nose at the top, rows run down the page. */
   vertical: boolean;
@@ -26,10 +30,16 @@ const TYPE_STYLE: Record<SeatType, string> = {
   aisle: 'border-border text-muted',
   middle: 'border-border text-muted/80',
   exit: 'border-accent/50 text-accent',
+  premium: 'border-sky/70 text-sky',
+  business: 'border-[#D5DEEC]/70 text-[#D5DEEC]',
   first: 'border-gold/70 text-gold',
+  jet: 'border-gold/70 text-gold',
 };
 
-export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: Props) {
+/** Front cabins from the nose back. */
+const FRONT_ORDER: CabinClass[] = ['first', 'business', 'premium'];
+
+export function CabinMap({ selected, onSelect, access, plan, vertical }: Props) {
   const root = useRef<HTMLDivElement>(null);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -39,7 +49,7 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
     const move = map[e.key];
     if (!move) return;
     e.preventDefault();
-    const next = moveSeat(selected, move, firstUnlocked, plan);
+    const next = moveSeat(selected, move, access, plan);
     if (next !== selected) {
       onSelect(next);
       requestAnimationFrame(() => root.current?.querySelector<HTMLButtonElement>(`[data-seat="${next}"]`)?.focus());
@@ -48,6 +58,7 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
 
   const seat = (code: string, locked = false) => {
     const type = seatTypeFor(code);
+    const needs = type === 'premium' || type === 'business' || type === 'first' ? UNLOCK_MIN[type] / 60 : 0;
     const on = code === selected;
     return (
       <button
@@ -56,7 +67,7 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
         data-seat={code}
         disabled={locked}
         aria-pressed={on}
-        aria-label={locked ? `${seatLabel(code)}, locked until 25 focus hours` : seatLabel(code)}
+        aria-label={locked ? `${seatLabel(code)}, locked until ${needs} focus hours` : seatLabel(code)}
         tabIndex={on ? 0 : -1}
         onClick={() => onSelect(code)}
         className={`flex size-11 shrink-0 cursor-pointer lg:size-[52px] lg:text-[12px] items-center justify-center rounded-[12px_12px_8px_8px] border font-mono text-[11px] font-semibold transition enabled:hover:scale-105 enabled:active:scale-95 disabled:cursor-not-allowed ${
@@ -65,7 +76,7 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
             : locked
               ? 'border-border text-muted/50 bg-surface-sunk'
               : `bg-surface-sunk hover:bg-surface ${TYPE_STYLE[type]}`
-        } ${type === 'first' ? (vertical ? '!w-[52px]' : '!h-[52px] lg:!h-[64px]') : ''}`}
+        } ${type === 'first' || type === 'business' ? (vertical ? '!w-[52px]' : '!h-[52px] lg:!h-[64px]') : ''}`}
       >
         {locked ? <Lock size={13} aria-hidden="true" /> : code}
       </button>
@@ -118,18 +129,22 @@ export function CabinMap({ selected, onSelect, firstUnlocked, plan, vertical }: 
           vertical ? 'flex-col items-center gap-1 rounded-b-3xl border-t-0 px-2 pt-1 pb-4' : 'items-center gap-1 rounded-r-3xl border-l-0 py-4 pr-5 pl-1'
         }`}
       >
-        {plan.hasFirst && (
-          <>
-            <div className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
-              {FIRST_ROWS.map((n, i) => row(n, FIRST_LETTERS, !firstUnlocked, i))}
-            </div>
-            <span className={`label !text-[9px] ${vertical ? 'my-2' : 'mx-2 [writing-mode:vertical-rl]'}`}>
-              {firstUnlocked ? 'First class' : 'First · 25 h to unlock'}
-            </span>
-          </>
-        )}
+        {plan.hasFront &&
+          FRONT_ORDER.map((c, ci) => {
+            const before = FRONT_ORDER.slice(0, ci).reduce((n, x) => n + CABIN_ROWS[x].length, 0);
+            return (
+              <div key={c} className={`flex items-center ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
+                <div className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
+                  {CABIN_ROWS[c].map((n, i) => row(n, FRONT_LETTERS, !access[c], before + i))}
+                </div>
+                <span className={`label !text-[9px] ${vertical ? 'my-2' : 'mx-2 [writing-mode:vertical-rl]'}`}>
+                  {access[c] ? CABIN_NAMES[c] : `${CABIN_NAMES[c]} · ${UNLOCK_MIN[c] / 60} h to unlock`}
+                </span>
+              </div>
+            );
+          })}
         <div className={`flex ${vertical ? 'flex-col gap-1' : 'gap-1 lg:gap-2'}`}>
-          {plan.rows.map((n, i) => row(n, plan.letters, false, i + (plan.hasFirst ? FIRST_ROWS.length : 0)))}
+          {plan.rows.map((n, i) => row(n, plan.letters, false, i + (plan.hasFront ? 9 : 0)))}
         </div>
       </div>
      </div>

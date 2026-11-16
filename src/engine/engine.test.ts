@@ -3,13 +3,13 @@ import airportsJson from '../data/airports.json';
 import { blockMinFor, formatBlock, haulFor, matchesFilter, rawMinutes, routeDuration } from './duration';
 import { distanceMi, headingAt, interpolate, positionAt, routeLine } from './geo';
 import { flightNoFor, gateFor } from './ids';
-import { defaultMeals, delayMeal, focusMinAt, legs, mealOptions, phaseAt, validateMeals } from './schedule';
-import { cabinFor, moveSeat, resolveSeat, seatLabel, seatOnPlan, seatTypeFor, SEAT_RULES } from './seats';
+import { defaultMeals, delayMeal, focusMinAt, legs, mealOptions, phaseAt, stepFor, validateMeals } from './schedule';
+import { accessFor, cabinFor, FULL_ACCESS, moveSeat, NO_ACCESS, placementFor, resolveSeat, seatLabel, seatOnPlan, seatTypeFor, SEAT_RULES } from './seats';
 import { applyOutcome, currentStreak, defaultProfile, localDay } from './stats';
 import { advance, board, canDelay, delayNextMeal, divert, elapsedMs, fastenSeatbelt, newSession, openPass, view } from './timer';
 import type { Airport, Booking, MealService, Session } from './types';
 import { keyValueAdapter, memoryKeyValue, type AppData } from '../storage/adapter';
-import { adoptGuestData, mergeData, syncedAdapter } from '../storage/merge';
+import { adoptGuestData, mergeData, rebuild, syncedAdapter } from '../storage/merge';
 
 const airports = airportsJson as Airport[];
 const ap = (code: string) => airports.find((a) => a.iata === code)!;
@@ -148,6 +148,8 @@ describe('schedule', () => {
 });
 
 describe('seats and ids', () => {
+  const none = NO_ACCESS;
+  const all = FULL_ACCESS;
   it('maps seats to types; row 12 is exit whatever the letter', () => {
     expect(seatTypeFor('14A')).toBe('window');
     expect(seatTypeFor('14F')).toBe('window');
@@ -155,28 +157,60 @@ describe('seats and ids', () => {
     expect(seatTypeFor('14E')).toBe('middle');
     expect(seatTypeFor('12B')).toBe('exit');
     expect(seatTypeFor('1A')).toBe('first');
+    expect(seatTypeFor('2F')).toBe('first');
+    expect(seatTypeFor('3A')).toBe('business');
+    expect(seatTypeFor('5D')).toBe('business');
+    expect(seatTypeFor('6C')).toBe('premium');
+    expect(seatTypeFor('9F')).toBe('premium');
+    expect(seatTypeFor('JET')).toBe('jet');
     expect(() => seatTypeFor('1B')).toThrow();
+    expect(() => seatTypeFor('7E')).toThrow();
+    expect(() => seatTypeFor('0A')).toThrow();
     expect(seatTypeFor('30F')).toBe('window');
     expect(() => seatTypeFor('31A')).toThrow();
     expect(seatLabel('14A')).toBe('Seat 14A, window');
+    expect(seatLabel('JET')).toBe('Private jet');
     expect(SEAT_RULES.exit).toMatchObject({ autoResume: true, divertHoldSec: 10, window: true });
     expect(SEAT_RULES.middle.ambientAudio).toBe(false);
   });
-  it('moves with arrow keys and stops at edges and the locked cabin', () => {
-    expect(moveSeat('14A', 'starboard', false)).toBe('14B');
-    expect(moveSeat('14A', 'port', false)).toBe('14A');
-    expect(moveSeat('10B', 'fore', false)).toBe('10B');
-    expect(moveSeat('10B', 'fore', true)).toBe('2A');
-    expect(moveSeat('2C', 'starboard', true)).toBe('2D');
-    expect(moveSeat('21F', 'aft', true)).toBe('21F');
+  it('class perks climb: miles, stamps, free breaks, and the jet is fully flexible', () => {
+    const miles = (['window', 'premium', 'business', 'first', 'jet'] as const).map((t) => SEAT_RULES[t].mileMultiplier);
+    expect(miles).toEqual([1, 1.1, 1.25, 1.5, 2]);
+    expect(SEAT_RULES.premium.stampClass).toBeNull();
+    expect(SEAT_RULES.business.stampClass).toBe('business');
+    expect(SEAT_RULES.first).toMatchObject({ stampClass: 'first', freeMeals: true, flexBreaks: false });
+    expect(SEAT_RULES.jet).toMatchObject({ stampClass: 'jet', freeMeals: true, flexBreaks: true });
+    expect(SEAT_RULES.business.freeMeals).toBe(false);
+  });
+  it('cabins unlock at 10, 25 and 50 hours, and first class is never taken back', () => {
+    expect(accessFor(0)).toEqual(none);
+    expect(accessFor(599)).toEqual(none);
+    expect(accessFor(600)).toEqual({ premium: true, business: false, first: false });
+    expect(accessFor(1500)).toEqual({ premium: true, business: true, first: false });
+    expect(accessFor(2999).first).toBe(false);
+    expect(accessFor(3000)).toEqual(all);
+    // Unlocked back when it was 25 h: still open at 26 h.
+    expect(accessFor(26 * 60, true)).toEqual(all);
+  });
+  it('moves with arrow keys and stops at edges and locked cabins', () => {
+    expect(moveSeat('14A', 'starboard', none)).toBe('14B');
+    expect(moveSeat('14A', 'port', none)).toBe('14A');
+    expect(moveSeat('10B', 'fore', none)).toBe('10B');
+    expect(moveSeat('10B', 'fore', all)).toBe('9A'); // B→A in the 2+2 cabins
+    expect(moveSeat('10B', 'fore', { ...none, premium: true })).toBe('9A');
+    expect(moveSeat('6C', 'fore', { ...none, premium: true })).toBe('6C'); // business is locked
+    expect(moveSeat('6C', 'fore', { premium: true, business: true, first: false })).toBe('5C');
+    expect(moveSeat('3C', 'fore', all)).toBe('2C');
+    expect(moveSeat('2C', 'starboard', all)).toBe('2D');
+    expect(moveSeat('21F', 'aft', all)).toBe('21F');
   });
   it('the cabin plan follows the focus block', () => {
     const short = cabinFor(55);
-    expect(short).toMatchObject({ size: 'short', letters: ['A', 'C', 'D', 'F'], hasFirst: false });
+    expect(short).toMatchObject({ size: 'short', letters: ['A', 'C', 'D', 'F'], hasFront: false });
     expect(short.rows).toEqual([10, 11, 12, 13, 14, 15]);
     expect(cabinFor(60).size).toBe('medium');
     expect(cabinFor(180).rows.at(-1)).toBe(21);
-    expect(cabinFor(181)).toMatchObject({ size: 'long', hasFirst: true });
+    expect(cabinFor(181)).toMatchObject({ size: 'long', hasFront: true });
     expect(cabinFor(181).rows.at(-1)).toBe(30);
     expect(cabinFor(55).rows.includes(12)).toBe(true); // exit row on every plane
   });
@@ -186,20 +220,29 @@ describe('seats and ids', () => {
     expect(seatOnPlan('16A', short)).toBe(false);
     expect(seatOnPlan('25C', medium)).toBe(false);
     expect(seatOnPlan('25C', long)).toBe(true);
-    expect(resolveSeat('25C', medium, false)).toBe('14A');
-    expect(resolveSeat('14E', short, false)).toBe('14A');
-    expect(resolveSeat('1A', short, true)).toBe('14A'); // no first class on a regional jet
-    expect(resolveSeat('1A', medium, false)).toBe('14A'); // locked
-    expect(resolveSeat('1A', medium, true)).toBe('1A');
-    expect(resolveSeat('13C', short, false)).toBe('13C');
+    expect(resolveSeat('25C', medium, none)).toBe('14A');
+    expect(resolveSeat('14E', short, none)).toBe('14A');
+    expect(resolveSeat('1A', short, all)).toBe('14A'); // no front cabins on a regional jet
+    expect(resolveSeat('1A', medium, none)).toBe('14A'); // locked
+    expect(resolveSeat('1A', medium, all)).toBe('1A');
+    expect(resolveSeat('4A', medium, { ...none, premium: true })).toBe('14A'); // business locked
+    expect(resolveSeat('7A', medium, { ...none, premium: true })).toBe('7A');
+    expect(resolveSeat('13C', short, none)).toBe('13C');
+  });
+  it('the private jet needs first class but flies on any route', () => {
+    expect(resolveSeat('JET', cabinFor(30), none)).toBe('14A');
+    expect(resolveSeat('JET', cabinFor(30), { premium: true, business: true, first: false })).toBe('14A');
+    expect(resolveSeat('JET', cabinFor(30), all)).toBe('JET');
+    expect(resolveSeat('JET', cabinFor(400), all)).toBe('JET');
+    expect(moveSeat('JET', 'fore', all)).toBe('14A');
   });
   it('arrow keys stay on the plane', () => {
     const short = cabinFor(45);
-    expect(moveSeat('15A', 'aft', true, short)).toBe('15A');
-    expect(moveSeat('10A', 'fore', true, short)).toBe('10A'); // no first class to move into
-    expect(moveSeat('14C', 'starboard', false, short)).toBe('14D');
-    expect(moveSeat('14D', 'starboard', false, short)).toBe('14F');
-    expect(moveSeat('21F', 'aft', false, cabinFor(400))).toBe('22F');
+    expect(moveSeat('15A', 'aft', all, short)).toBe('15A');
+    expect(moveSeat('10A', 'fore', all, short)).toBe('10A'); // no front cabins to move into
+    expect(moveSeat('14C', 'starboard', none, short)).toBe('14D');
+    expect(moveSeat('14D', 'starboard', none, short)).toBe('14F');
+    expect(moveSeat('21F', 'aft', none, cabinFor(400))).toBe('22F');
   });
   it('flight number and gate are stable per route', () => {
     expect(flightNoFor('SEA', 'SFO')).toMatch(/^AX\d{3}$/);
@@ -385,13 +428,52 @@ describe('stats', () => {
     expect(l.stamps).toEqual([]);
   });
 
-  it('first class unlocks at 25 focus hours, counting diverted minutes', () => {
+  it('first class unlocks at 50 focus hours, counting diverted minutes', () => {
     const p = defaultProfile();
-    p.totals.focusMin = 1500 - 95 - 30;
+    p.totals.focusMin = 3000 - 95 - 30;
     let l = applyOutcome({ profile: p, stamps: [] }, booking(), landedOn(10));
     expect(l.profile.firstClassUnlocked).toBe(false);
     l = applyOutcome(l, booking(), { ...landedOn(10), state: 'diverted', focusedMin: 30 });
     expect(l.profile.firstClassUnlocked).toBe(true);
+  });
+  it('class bonus miles are credited on landing, diversions get none', () => {
+    const base = { profile: defaultProfile(), stamps: [] };
+    const miles = (seatType: Booking['seatType']) => applyOutcome(base, booking({ seatType, distanceMi: 1000 }), landedOn(10)).profile.totals.miles;
+    expect(miles('window')).toBe(1000);
+    expect(miles('premium')).toBe(1100);
+    expect(miles('business')).toBe(1250);
+    expect(miles('first')).toBe(1500);
+    expect(miles('jet')).toBe(2000);
+    const d = applyOutcome(base, booking({ seatType: 'jet' }), { ...landedOn(10), state: 'diverted', focusedMin: 30 });
+    expect(d.profile.totals.miles).toBe(0);
+  });
+  it('a saved first-class unlock survives a rebuild (earned at the old 25 h threshold)', () => {
+    const settings = { ...defaultProfile(), firstClassUnlocked: true };
+    expect(rebuild(settings, [], []).profile?.firstClassUnlocked).toBe(true);
+  });
+});
+
+describe('break rules by class', () => {
+  const m = (startMin: number, lengthMin: number): MealService => ({ kind: 'snack', startMin, lengthMin });
+  it('economy needs 15 min legs; first class 5; the jet 5 too but to the minute and up to 60 min', () => {
+    const econ = placementFor('window');
+    const first = placementFor('first');
+    const jet = placementFor('jet');
+    expect(validateMeals(120, [m(10, 10)], econ).length).toBeGreaterThan(0);
+    expect(validateMeals(120, [m(10, 10)], first)).toEqual([]);
+    expect(validateMeals(120, [m(10, 10)], jet)).toEqual([]);
+    expect(validateMeals(120, [m(7, 3), m(15, 1)], first)).toEqual([]); // work leg of 5 is allowed
+    expect(validateMeals(120, [m(7, 3), m(12, 1)], jet).length).toBeGreaterThan(0); // 2 min leg is not
+    expect(validateMeals(120, [m(50, 60)], jet)).toEqual([]);
+    expect(validateMeals(200, [m(50, 61)], jet).length).toBeGreaterThan(0);
+    expect(stepFor(jet)).toBe(1);
+    expect(stepFor(first)).toBe(5);
+    expect(stepFor(econ)).toBe(5);
+  });
+  it('a first class delay is checked against first class rules', () => {
+    // 35–40 in a 60 min flight moves to 45–50: fine for first class, too late for economy.
+    expect(delayMeal(60, [m(35, 5)], 0, placementFor('first'))).not.toBeNull();
+    expect(delayMeal(60, [m(35, 5)], 0)).toBeNull();
   });
 });
 

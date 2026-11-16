@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { CRUISE_BUFFER_MIN, legs, sortMeals, validateMeals, type PlacementRules } from '../engine/schedule';
+import { CRUISE_BUFFER_MIN, legs, sortMeals, stepFor, validateMeals, type PlacementRules } from '../engine/schedule';
 import { formatBlock } from '../engine/duration';
 import type { MealService } from '../engine/types';
 import { MEAL_NAMES } from '../lib/format';
@@ -22,7 +22,8 @@ export function MealTimeline({ blockMin, meals, nowMin, onChange, rules, thin, s
   const bar = useRef<HTMLDivElement>(null);
   const sorted = sortMeals(meals);
   const pct = (min: number) => `${(min / blockMin) * 100}%`;
-  const edge = rules?.free ? 5 : CRUISE_BUFFER_MIN;
+  const edge = rules?.free || rules?.flex ? 5 : CRUISE_BUFFER_MIN;
+  const step = stepFor(rules);
 
   const tryMove = (index: number, startMin: number) => {
     if (!onChange) return;
@@ -39,7 +40,7 @@ export function MealTimeline({ blockMin, meals, nowMin, onChange, rules, thin, s
     const start0 = sorted[index].startMin;
     const move = (ev: PointerEvent) => {
       const d = ((ev.clientX - x0) / width) * blockMin;
-      tryMove(index, 5 * Math.round((start0 + d) / 5));
+      tryMove(index, step * Math.round((start0 + d) / step));
     };
     const up = () => {
       el.removeEventListener('pointermove', move);
@@ -54,7 +55,7 @@ export function MealTimeline({ blockMin, meals, nowMin, onChange, rules, thin, s
   const onKey = (index: number) => (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
-      tryMove(index, sorted[index].startMin + (e.key === 'ArrowRight' ? 5 : -5));
+      tryMove(index, sorted[index].startMin + (e.key === 'ArrowRight' ? step : -step));
     }
   };
 

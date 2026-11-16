@@ -13,7 +13,7 @@ export interface Airport {
   large: boolean;
 }
 
-export type SeatType = 'window' | 'aisle' | 'middle' | 'exit' | 'first';
+export type SeatType = 'window' | 'aisle' | 'middle' | 'exit' | 'premium' | 'business' | 'first' | 'jet';
 export type Purpose = 'deep-work' | 'coding' | 'studying' | 'writing';
 export type Haul = 'short' | 'medium' | 'long';
 
@@ -75,5 +75,7 @@ export interface Profile {
   streak: { current: number; best: number; lastDay?: string }; // lastDay = local 'YYYY-MM-DD'
   firstClassUnlocked: boolean;
   firstClassNoticeShown: boolean;
+  /** Premium economy and business unlock notices already seen. */
+  classNoticesShown: string[];
   audio: Record<AudioChannel, { on: boolean; vol: number }>;
 }

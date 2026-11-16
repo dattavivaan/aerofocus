@@ -1,9 +1,20 @@
 import { airport } from '../../data/airports';
 import { formatBlock } from '../../engine/duration';
 import { SEAT_INFO } from '../../engine/seats';
-import type { Booking } from '../../engine/types';
+import type { Booking, SeatType } from '../../engine/types';
 import { clock, distance, MEAL_NAMES, purposeLabel } from '../../lib/format';
 import { PlaneIcon } from '../ui/PlaneIcon';
+
+const CLASS_LABEL: Record<SeatType, string> = {
+  window: 'Economy',
+  aisle: 'Economy',
+  middle: 'Economy',
+  exit: 'Economy',
+  premium: 'Premium economy',
+  business: 'Business',
+  first: 'First',
+  jet: 'Private jet',
+};
 
 function Field({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
@@ -87,7 +98,7 @@ export function BoardingPass({ booking: b, passenger, departAt, boardingAt, unit
           <Field label="Passenger" value={passenger} />
           <Field label="Flight" value={b.flightNo} />
           <Field label="Gate" value={b.gate} />
-          <Field label="Seat" value={`${b.seat} · ${SEAT_INFO[b.seatType].name}`} />
+          <Field label="Seat" value={b.seatType === 'jet' ? SEAT_INFO.jet.name : `${b.seat} · ${SEAT_INFO[b.seatType].name}`} />
           <Field label="Boarding" value={clock(boardingAt)} />
           <Field label="Departs" value={clock(departAt)} />
           <Field label="Arrives" value={clock(arriveAt)} />
@@ -95,7 +106,7 @@ export function BoardingPass({ booking: b, passenger, departAt, boardingAt, unit
           <Field label="Meal service" value={mealSummary(b)} />
           <Field label="Distance" value={distance(b.distanceMi, units)} />
           <Field label="Purpose" value={purposeLabel(b.purpose)} />
-          <Field label="Class" value={b.seatType === 'first' ? 'First' : 'Economy'} />
+          <Field label="Class" value={CLASS_LABEL[b.seatType]} />
         </dl>
       </div>
 

@@ -10,7 +10,7 @@ import { MobileStepHeader, Screen, StepPills, TopBar } from '../components/ui/To
 import { airport, destinationsFrom, guessHomeAirport } from '../data/airports';
 import { formatBlock, routeDuration, type FocusFilter } from '../engine/duration';
 import { defaultMeals, mealOptions, validateMeals } from '../engine/schedule';
-import { cabinFor, resolveSeat, SEAT_RULES, seatTypeFor } from '../engine/seats';
+import { accessFor, cabinFor, placementFor, resolveSeat, seatTypeFor } from '../engine/seats';
 import type { MealService } from '../engine/types';
 import { distance, MEAL_NAMES, PURPOSES } from '../lib/format';
 import { useIsMobile } from '../lib/hooks';
@@ -34,14 +34,16 @@ export function Booking() {
   const homeCode = useProfile((s) => s.profile.homeAirport);
   const flying = useSession((s) => isFlying(s.session));
   const [filter, setFilter] = useState<FocusFilter | null>(null);
-  const unlocked = useProfile((s) => s.profile.firstClassUnlocked);
+  const profile = useProfile((s) => s.profile);
+  const access = accessFor(profile.totals.focusMin, profile.firstClassUnlocked);
 
   const origin = airport(draft.origin) ?? airport(homeCode) ?? guessHomeAirport();
   const dest = airport(draft.destination);
   const dur = useMemo(() => (dest ? routeDuration(origin, dest) : null), [origin, dest]);
-  // First class may place meals anywhere. A seat not on this plane does not count.
-  const seat = resolveSeat(draft.seat, cabinFor(dur?.blockMin ?? 120), unlocked);
-  const rules = { free: SEAT_RULES[seatTypeFor(seat)].freeMeals };
+  // First class may place meals anywhere and the jet to the minute. A seat not on this plane does not count.
+  const seat = resolveSeat(draft.seat, cabinFor(dur?.blockMin ?? 120), access);
+  const rules = placementFor(seatTypeFor(seat));
+  const flex = !!rules.flex;
   const suggestions = useMemo(() => (filter ? destinationsFrom(origin, filter, 6) : []), [origin, filter]);
 
   const options = useMemo(() => (dur ? mealOptions(dur.blockMin) : []), [dur]);
@@ -61,7 +63,7 @@ export function Booking() {
   const addBreak = () => {
     if (!dur) return;
     // Try each 5 min slot for a new 10 min break; take the first that fits.
-    for (let start = 15; start <= dur.blockMin - 25; start += 5) {
+    for (let start = flex ? 5 : 15; start <= dur.blockMin - 15; start += 5) {
       const next = [...draft.customMeals, { kind: 'snack', startMin: start, lengthMin: 10 } as MealService];
       if (validateMeals(dur.blockMin, next, rules).length === 0) return draft.set({ customMeals: next });
     }
@@ -229,7 +231,11 @@ export function Booking() {
       {optionId === 'custom' && (
         <div className="mt-4 flex flex-col gap-2">
           <p className="text-muted text-[13px]">
-            Drag a blue break along the bar, or focus it and use the arrow keys. Work legs can’t be shorter than 15 min, and breaks stay inside cruising.
+            {flex
+              ? 'Private jet: drag a break to the minute, or focus it and use the arrow keys. Breaks can be 1–60 min long, and work legs only need to be 5 min.'
+              : rules.free
+                ? 'Drag a blue break along the bar, or focus it and use the arrow keys. First class lets you place breaks anywhere, with work legs of at least 5 min.'
+                : 'Drag a blue break along the bar, or focus it and use the arrow keys. Work legs can’t be shorter than 15 min, and breaks stay inside cruising.'}
           </p>
           {draft.customMeals.map((m, i) => (
             <div key={i} className="flex items-center gap-2 text-[14px]">
@@ -248,7 +254,7 @@ export function Booking() {
                   if (validateMeals(dur.blockMin, next, rules).length === 0) draft.set({ customMeals: next });
                 }}
               >
-                {[5, 10, 15, 20, 25, 30].map((n) => (
+                {(flex ? [1, 2, 3, 5, 10, 15, 20, 25, 30, 45, 60] : [5, 10, 15, 20, 25, 30]).map((n) => (
                   <option key={n} value={n}>
                     {n} min
                   </option>

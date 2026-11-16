@@ -3,7 +3,7 @@
 // laptop close and page reload. All functions are pure; `now` is passed in.
 
 import { delayMeal, focusMinAt, mealTotalMin, phaseAt, sortMeals, type Phase } from './schedule';
-import { SEAT_RULES } from './seats';
+import { placementFor, SEAT_RULES } from './seats';
 import { newId } from './ids';
 import type { Booking, MealService, Session } from './types';
 
@@ -107,7 +107,7 @@ export function canDelay(booking: Booking, session: Session, now: number): boole
   if (!SEAT_RULES[booking.seatType].canDelay) return false;
   const s = advance(booking, session, now);
   const i = nextMealIndex(booking, s);
-  return i >= 0 && delayMeal(booking.blockMin, booking.meals, i) !== null;
+  return i >= 0 && delayMeal(booking.blockMin, booking.meals, i, placementFor(booking.seatType)) !== null;
 }
 
 /** Aisle seats: push the next meal service back 10 min, once per leg. */
@@ -118,7 +118,7 @@ export function delayNextMeal(
 ): { booking: Booking; session: Session } {
   const s = advance(booking, session, now);
   if (!canDelay(booking, s, now)) return { booking, session: s };
-  const meals = delayMeal(booking.blockMin, booking.meals, nextMealIndex(booking, s))!;
+  const meals = delayMeal(booking.blockMin, booking.meals, nextMealIndex(booking, s), placementFor(booking.seatType))!;
   return { booking: { ...booking, meals }, session: withEvent(s, now, 'meal-delay') };
 }
 

@@ -1,4 +1,4 @@
-import { isFirstClassUnlocked } from './seats';
+import { isFirstClassUnlocked, SEAT_RULES } from './seats';
 import type { Booking, Profile, Session, Stamp } from './types';
 
 /** A saved profile with any settings added since it was saved filled in. */
@@ -14,6 +14,7 @@ export function defaultProfile(): Profile {
     streak: { current: 0, best: 0 },
     firstClassUnlocked: false,
     firstClassNoticeShown: false,
+    classNoticesShown: [],
     audio: {
       cabin: { on: true, vol: 0.5 },
       rain: { on: false, vol: 0.4 },
@@ -61,7 +62,7 @@ export function applyOutcome(ledger: Ledger, booking: Booking, session: Session)
   let stamps = ledger.stamps;
 
   if (session.state === 'landed') {
-    totals.miles += booking.distanceMi;
+    totals.miles += Math.round(booking.distanceMi * SEAT_RULES[booking.seatType].mileMultiplier);
     totals.flights += 1;
     const day = localDay(at);
     if (streak.lastDay !== day) {
