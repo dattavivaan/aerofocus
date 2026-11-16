@@ -46,7 +46,7 @@ export function Seat() {
   );
 
   return (
-    <Screen glows={['50% -2%', '2% 72%', '98% 82%']} className={mobile ? '!pb-28' : ''}>
+    <Screen scene="cabin" glows={['50% -2%', '2% 72%', '98% 82%']} className={mobile ? '!pb-28' : ''}>
       <div className="hidden md:block">
         <TopBar>
           <StepPills current={2} />

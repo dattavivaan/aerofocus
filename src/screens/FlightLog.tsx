@@ -8,7 +8,7 @@ export function FlightLog() {
   const { bookings, sessions, profile } = useProfile();
   const flights = finishedFlights(bookings, sessions);
   return (
-    <Screen glows={['6% 18%', '94% 28%', '44% 102%']}>
+    <Screen scene="quiet" glows={['6% 18%', '94% 28%', '44% 102%']}>
       <TopBar compact>
         <MainNav />
       </TopBar>

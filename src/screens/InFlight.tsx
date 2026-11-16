@@ -394,7 +394,7 @@ export function InFlight() {
   }
 
   return (
-    <Screen glows={['96% 58%', '28% -2%', '2% 98%']}>
+    <Screen scene="sky" glows={['96% 58%', '28% -2%', '2% 98%']}>
       {header}
       <main className="mx-auto mt-6 flex max-w-[1344px] flex-col gap-6">
         <div className="grid grid-cols-[minmax(0,1fr)_340px] gap-6">

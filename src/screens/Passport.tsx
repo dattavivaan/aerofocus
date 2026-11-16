@@ -19,7 +19,7 @@ export function Passport() {
   const slots = Math.max(mobile ? 8 : 12, Math.ceil((stamps.length + 1) / 4) * 4);
 
   return (
-    <Screen glows={['72% 6%', '8% 52%', '88% 96%']}>
+    <Screen scene="quiet" glows={['72% 6%', '8% 52%', '88% 96%']}>
       <TopBar compact>
         <MainNav />
       </TopBar>

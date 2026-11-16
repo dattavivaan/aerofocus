@@ -118,7 +118,7 @@ export function Landing() {
   );
 
   return (
-    <Screen glows={['28% 8%', '82% 40%', '12% 94%']} className={mobile ? '!pb-28' : ''}>
+    <Screen scene="arrival" glows={['28% 8%', '82% 40%', '12% 94%']} className={mobile ? '!pb-28' : ''}>
       <TopBar compact>
         <MainNav />
       </TopBar>

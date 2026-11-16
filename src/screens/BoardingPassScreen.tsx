@@ -41,7 +41,7 @@ export function BoardingPassScreen() {
 
   if (isFlying(session)) return <Navigate to={ROUTES.flight} replace />;
   if (!hasRoute) return <Navigate to={ROUTES.booking} replace />;
-  if (!booking || !passOpenedAt || stale) return <Screen glows={['20% 90%', '80% 6%', '96% 70%']}>{null}</Screen>;
+  if (!booking || !passOpenedAt || stale) return <Screen scene="runway" glows={['20% 90%', '80% 6%', '96% 70%']}>{null}</Screen>;
 
   // Departure is 5 min after the pass opened, and never in the past.
   const departAt = Math.max(passOpenedAt + DEPART_IN_MS, now);
@@ -59,7 +59,7 @@ export function BoardingPassScreen() {
   };
 
   return (
-    <Screen glows={['18% 92%', '82% 4%', '98% 72%']} className={mobile ? '!pb-28' : ''}>
+    <Screen scene="runway" glows={['18% 92%', '82% 4%', '98% 72%']} className={mobile ? '!pb-28' : ''}>
       <div className="hidden md:block">
         <TopBar>
           <StepPills current={3} />

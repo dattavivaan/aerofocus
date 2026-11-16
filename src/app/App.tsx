@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ROUTES } from './routes';
 import { initAuth } from '../auth/auth';
+import { LiquidDefs } from '../components/ui/LiquidDefs';
 import { Booking } from '../screens/Booking';
 import { InFlight } from '../screens/InFlight';
 import { BoardingPassScreen } from '../screens/BoardingPassScreen';
@@ -28,6 +29,8 @@ export function App() {
   if (!hydrated) return <div className="screen-bg min-h-dvh" aria-busy="true" />;
 
   return (
+    <>
+    <LiquidDefs />
     <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <Routes>
         <Route path={ROUTES.terminal} element={<Terminal />} />
@@ -42,5 +45,6 @@ export function App() {
         <Route path="*" element={<Navigate to={ROUTES.terminal} replace />} />
       </Routes>
     </BrowserRouter>
+    </>
   );
 }
